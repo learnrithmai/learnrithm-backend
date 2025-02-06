@@ -1,0 +1,48 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# TypeScript
+dist/
+*.tsbuildinfo
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# MacOS
+.DS_Store
+
+# Azure
+*.publishsettings
+.azure/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Editor and IDE Specific
+.vscode/
+.idea/
+*.swp
+*~
+
+# Prisma
+prisma/migrations/
+.prisma/
+
+# Coverage Reports
+coverage/
+*.lcov
+
+# Temporary Files
+tmp/
+temp/
