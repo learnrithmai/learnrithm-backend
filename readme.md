@@ -110,11 +110,3 @@ npm run test
 
 ## 📄 License  
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.  
-
----
-
-## ✨ Acknowledgements  
-- **OpenAI** for AI content generation.  
-- **DeepL** for language translations.  
-- **Prisma** for a modern database experience.  
-- **Azure** for scalable file storage and hosting.  
