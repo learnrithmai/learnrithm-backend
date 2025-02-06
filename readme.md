@@ -1,4 +1,4 @@
-<img src="./public/learnrithm.png" alt="Learnrithm Logo" width="50" height="50">
+<img src="./public/Learnrithm.png" alt="Learnrithm Logo" width="50" height="50">
 # Learnrithm Backend  
 **A scalable and future-proof backend for Learnrithm, integrating AI-generated learning tools, centralized dashboard, and modern web technologies for seamless learning experiences.**
 
