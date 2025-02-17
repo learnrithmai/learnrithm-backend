@@ -1,0 +1,37 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background: radial-gradient(circle at bottom, #192f6a, black);
+    color: white;
+    margin: 0;
+}
+
+.container {
+    max-width: 600px;
+}
+
+.logo {
+    width: 150px;
+    height: auto;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.description {
+    font-size: 18px;
+    color: #ddd;
+}
+
+.email {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+}
