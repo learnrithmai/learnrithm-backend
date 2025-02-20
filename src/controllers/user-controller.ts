@@ -1,321 +1,192 @@
+import { PrismaClient } from "@prisma/client";
 import { Request, Response, NextFunction } from "express";
-import crypto from "crypto";
-import nodemailer from "nodemailer";
-import axios from "axios";
-import dotenv from "dotenv";
+import { hash } from "bcryptjs";
+import { asyncWrapper } from "@/middleware/asyncWrapper";
 
-// Load environment variables
-dotenv.config();
+const prisma = new PrismaClient();
 
-// Import models
-import User from "../models/User";
-import Streaker from "../models/Streaker";
+/**
+ * Get a single user by ID.
+ */
+export const getUser = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
 
-// Create a transporter for sending emails
-const transporter = nodemailer.createTransport({
-  host: "smtppro.zoho.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.PASSWORD,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
-
-interface EmailVerificationOptions {
-  mName: string;
-  app: string;
-  token: string;
-  email: string;
-}
-
-// Helper function to send an email verification message
-async function sendEmailVerification({
-  mName,
-  app,
-  token,
-  email,
-}: EmailVerificationOptions): Promise<void> {
-  const verificationLink = `${process.env.WEBSITE_URL}/verify-email?token=${token}&app=${app}&email=${email}`;
-  const htmlContent = `
-    <html>
-      <body>
-        <p>Hi ${mName},</p>
-        <p>Please verify your email by clicking the link below:</p>
-        <a href="${verificationLink}">Verify Email</a>
-      </body>
-    </html>
-  `;
-
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: email,
-    subject: "Email Verification",
-    html: htmlContent,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-  } catch (error) {
-    console.error("Error sending verification email:", error);
-  }
-}
-
-// Signup controller
-export const signup = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { email, mName, password, type, plan, refCode, app, refMail, country } = req.body;
-  if (!email || !password || !plan || !country) {
-    return res.status(400).json({
-      success: false,
-      message: "Email, password, plan, and country are required.",
+    const user = await prisma.user.findUnique({
+      where: { id },
     });
-  }
 
-  const token = crypto.randomBytes(32).toString("hex");
-
-  try {
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "User with this email already exists.",
-      });
+    if (!user) {
+      return res.status(404).json({ errorMsg: "User not found" });
     }
 
-    // Create new user
-    const newUser = new User({
-      email: email.toLowerCase(),
+    res.status(200).json({
+      success: `User ${user.email} fetched successfully!`,
+      user,
+    });
+  }
+);
+
+/**
+ * Get all users with optional pagination and search.
+ */
+export const getAllUsers = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Default pagination parameters
+    const { page = 1, limit = 10, search } = req.query;
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const offsetNum = (pageNum - 1) * limitNum;
+
+    // Build query filter (search by email or mName)
+    const query: any = {};
+    if (search) {
+      // Escape special characters in the search string
+      const escapedSearch = search
+        .toString()
+        .replaceAll(/[$()*+.?[\\\]^{|}]/g, "\\$&");
+      query.OR = [
+        { email: { contains: escapedSearch, mode: "insensitive" } },
+        { mName: { contains: escapedSearch, mode: "insensitive" } },
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where: query,
+      skip: offsetNum,
+      take: limitNum,
+      orderBy: { date: "desc" },
+    });
+
+    const totalUsers = await prisma.user.count({ where: query });
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ errorMsg: "No users found" });
+    }
+
+    res.status(200).json({
+      success: "Users fetched successfully!",
+      data: {
+        total_users: totalUsers,
+        users,
+      },
+    });
+  }
+);
+
+/**
+ * Create a new user.
+ */
+export const createUser = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      email,
       mName,
       password,
       type,
       plan,
-      signUpApp: app,
-      refUserMail: refMail,
-      emailToken: token,
-      emailTokenExpires: Date.now() + 3600000, // 1 hour
+      signUpApp,
+      refUserMail,
       country,
-    });
-    await newUser.save();
+    } = req.body;
 
-    // Create new streak document
-    const newStreak = new Streaker({
-      userId: newUser._id,
-      email: email.toLowerCase(),
-      signQuiz: app === "AIQuiz",
-      signTeacher: app === "AITeacher",
-      dateStrekingCourse: app === "AITeacher" ? new Date() : null,
-      dateStrekingQuiz: app === "AIQuiz" ? new Date() : null,
-    });
-    await newStreak.save();
-
-    // Link streak to the user
-    newUser.streakId = newStreak._id;
-    await newUser.save();
-
-    // Send verification email
-    await sendEmailVerification({ mName, app, token, email: newUser.email });
-
-    // Optionally handle referral code
-    let referralMessage = "";
-    if (refCode) {
-      try {
-        const response = await axios.post(
-          `${process.env.PARTNER_SERVER}/api/RefUser`,
-          {
-            data: { refCode, refMail, app, email },
-          }
-        );
-        referralMessage = response.data.mss;
-      } catch (error) {
-        console.error("Error with referral system:", error);
-      }
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ errorMsg: "Email and password are required" });
     }
 
-    return res.json({
-      success: true,
-      message: `Account created successfully. ${referralMessage}`,
-      userId: newUser._id,
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
     });
-  } catch (error) {
-    console.error("Signup error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-    });
-  }
-};
-
-// Email verification controller
-export const verifyEmail = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { token } = req.body;
-  try {
-    const user = await User.findOne({
-      emailToken: token,
-      emailTokenExpires: { $gt: Date.now() },
-    });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid or expired token.", status: 500 });
-    }
-    user.isVerified = true;
-    user.emailToken = undefined;
-    user.emailTokenExpires = undefined;
-    await user.save();
-
-    return res.json({ message: "Email verified successfully!", status: 200 });
-  } catch (error) {
-    console.error("Email verification error:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Resend email verification controller
-export const resendVerificationEmail = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { email } = req.body;
-  try {
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-    const newToken = crypto.randomBytes(32).toString("hex");
-    user.emailToken = newToken;
-    user.emailTokenExpires = Date.now() + 3600000;
-    await user.save();
-
-    await sendEmailVerification({
-      mName: user.mName,
-      app: user.signUpApp,
-      token: newToken,
-      email: user.email,
-    });
-
-    return res.status(200).json({ success: true, message: "Verification email resent" });
-  } catch (error) {
-    console.error("Resend verification error:", error);
-    return res.status(500).json({ success: false, message: "Error sending email" });
-  }
-};
-
-// Signin controller
-export const signin = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { email, signInApp } = req.body;
-  try {
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(400).json({ success: false, message: "Invalid email or password." });
+    if (existingUser) {
+      return res.status(409).json({ errorMsg: "User already exists" });
     }
 
-    // NOTE: Password validation logic should be added here
+    // Hash the password
+    const hashedPassword = await hash(password, 10);
 
-    // (Optionally update streak info; for brevity, streak logic is omitted.)
-
-    return res.json({
-      success: true,
-      message: "SignIn successful",
-      userData: {
-        _id: user._id,
-        email: user.email,
-        mName: user.mName,
-        type: user.type,
-        plan: user.plan,
+    // Create user record
+    const newUser = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        mName,
+        password: hashedPassword,
+        type: type || "free",
+        plan: plan || "hobby",
+        signUpApp: signUpApp || "AITeacher",
+        refUserMail,
+        country,
+        // emailToken, emailTokenExpires, reset tokens etc. can be set later as needed
       },
     });
-  } catch (error) {
-    console.error("Signin error:", error);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
 
-// Profile update controller
-export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { email, mName, password, uid } = req.body;
-  try {
-    const updateData: { [key: string]: any } = { email, mName };
-    if (password && password.trim() !== "") {
-      updateData.password = password;
-    }
-    await User.findOneAndUpdate({ _id: uid }, { $set: updateData });
-    return res.json({ success: true, message: "Profile Updated" });
-  } catch (error) {
-    console.error("Profile update error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
-  }
-};
-
-// Update user plan controller
-export const updateUserPlan = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { email, plan } = req.body;
-  try {
-    const user = await User.findOneAndUpdate(
-      { email: email.toLowerCase() },
-      { $set: { type: plan } },
-      { new: true }
-    );
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    return res.status(200).json({ message: "User plan updated successfully", user });
-  } catch (error) {
-    console.error("Error updating user plan:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-// Forgot password controller
-export const forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { email, name, company, logo } = req.body;
-  try {
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-    const token = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000;
-    await user.save();
-
-    const resetLink = `${process.env.WEBSITE_URL}/reset-password/${token}`;
-    const mailOptions = {
-      from: process.env.EMAIL,
-      to: user.email,
-      subject: `${name} Password Reset`,
-      html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
-    };
-    await transporter.sendMail(mailOptions);
-    return res.json({
-      success: true,
-      message: "Password reset link sent to your email",
+    res.status(201).json({
+      success: `User ${newUser.email} created successfully!`,
+      user: newUser,
     });
-  } catch (error) {
-    console.error("Forgot password error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
   }
-};
+);
 
-// Reset password controller
-export const resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
-  const { password, token } = req.body;
-  try {
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
+/**
+ * Update an existing user.
+ */
+export const updateUser = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const { email, mName, password, country } = req.body;
+
+    // Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { id },
     });
     if (!user) {
-      return res.status(400).json({ success: false, message: "Invalid or expired token" });
+      return res.status(404).json({ errorMsg: "User not found" });
     }
-    user.password = password;
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-    await user.save();
-    return res.json({
-      success: true,
-      message: "Password updated successfully",
-      email: user.email,
+
+    // Hash new password if provided; otherwise retain the existing hash
+    const hashedPassword = password ? await hash(password, 10) : user.password;
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        email,
+        mName,
+        password: hashedPassword,
+        country,
+      },
     });
-  } catch (error) {
-    console.error("Reset password error:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+
+    res.status(200).json({
+      success: `User ${updatedUser.email} updated successfully!`,
+      user: updatedUser,
+    });
   }
-};
+);
+
+/**
+ * Delete a user.
+ * Note: Deletion should be allowed only for admin users per your policy.
+ */
+export const deleteUser = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    // Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      return res.status(404).json({ errorMsg: "User not found" });
+    }
+
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      success: `User ${user.email} deleted successfully!`,
+    });
+  }
+);

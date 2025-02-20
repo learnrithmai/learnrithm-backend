@@ -1,133 +1,14 @@
-// schema.prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-datasource db {
-  provider = "postgresql" // Change to your DB provider (mysql, sqlite, etc.)
-  url      = env("DATABASE_URL")
-}
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Message {
-  id        String   @id @default(cuid())
-  sender    String
-  text      String
-  imageUrl  String   @default("")
-  timestamp DateTime @default(now())
-}
-
-model Admin {
-  id      String @id @default(cuid())
-  email   String @unique
-  mName   String?
-  type    String
-  total   Int    @default(0)
-  terms   String @default("")
-  privacy String @default("")
-  cancel  String @default("")
-  refund  String @default("")
-  billing String @default("")
-}
-
-model User {
-  id                   String    @id @default(cuid())
-  email                String    @unique
-  isVerified           Boolean   @default(false)
-  emailToken           String?
-  emailTokenExpires    DateTime?
-  mName                String?
-  password             String
-  type                 String    @default("free")
-  plan                 String    @default("hobby")
-  signUpApp            String    @default("AITeacher")
-  resetPasswordToken   String?
-  resetPasswordExpires DateTime?
-  date                 DateTime  @default(now())
-  refUserMail          String?
-  streakId             String?   @unique
-  lastLogin            DateTime?
-  country              String?
-  
-  // One-to-one relation with Streaker (if present)
-  streak               Streaker? @relation(fields: [streakId], references: [id])
-}
-
-model Course {
-  id        String   @id @default(cuid())
-  user      String   // This field stores the user ID or identifier; adjust as needed for relations.
-  email     String
-  content   String
-  type      String?
-  mainTopic String?
-  language  String?
-  photo     String?
-  date      DateTime @default(now())
-  end       DateTime @default(now())
-  completed Boolean  @default(false)
-}
-
-model Subscription {
-  id           String   @id @default(cuid())
-  user         String   // Consider making this a relation if you wish to link to User.
-  subscription String
-  subscriberId String
-  type         String?
-  method       String?
-  date         DateTime @default(now())
-  active       Boolean  @default(true)
-}
-
-model Contact {
-  id    String   @id @default(cuid())
-  fname String?
-  lname String?
-  email String?
-  phone String?  // Stored as a string to accommodate various phone formats.
-  msg   String?
-  date  DateTime @default(now())
-}
-
-model Streaker {
-  id                 String   @id @default(cuid())
-  userId             String
-  email              String
-  signQuiz           Boolean  @default(false)
-  signQuizNotify     Boolean  @default(false)
-  signTeacherNotify  Boolean  @default(false)
-  signTeacher        Boolean  @default(false)
-  dateStrekingQuiz   DateTime @default(now())
-  dateStrekingCourse DateTime @default(now())
-  courseDo           Boolean  @default(false)
-  courseNotify       Boolean  @default(false)
-  quizDo             Boolean  @default(false)
-  quizNotify         Boolean  @default(false)
-  quizStreakCount    Int      @default(0)
-  teacherStreakCount Int      @default(0)
-  
-  // Relation back to the User
-  user User @relation(fields: [userId], references: [id])
-}
-
-model RefUser {
-  id          String   @id
-  app         String
-  date        DateTime
-  email       String
-  isPaid      String
-  isVerified  Boolean
-  partnerId   String
-  refCoUsed   String
-  userRefMail String
-}
-
-model Transaction {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  duration          String
-  subscriptionStart DateTime
-  subscriptionEnd   DateTime
-  orderId           String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
