@@ -1,14 +1,219 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+//////////////////////////
+// Shared Helper Models //
+//////////////////////////
+
+// (You can add common types, enums or helper models here if needed)
+
+//////////////////////////
+//  Application Models  //
+//////////////////////////
+
+
+model UserAuth {
+  id                   String     @id @map("_id") @default(auto()) @db.ObjectId
+  email                String     @unique
+  password             String
+}
+
+model User {
+  id                   String      @id @map("_id") @default(auto()) @db.ObjectId
+  userId               String    @unique
+  email                String    @unique
+  isVerified           Boolean   @default(false)
+  firstName            String
+  plan                 planType  
+  lastLogin            DateTime?
+  imgThumbnail         String?
+}
+
+model UserInfo {
+  id                          String    @id @map("_id") @default(auto()) @db.ObjectId
+  userId                      String    @unique 
+  email                       String?   @unique
+  SubscriptionPlan            planType
+  ExpirationSubscription      DateTime?
+  firstName                   String
+  lastName                    String?
+  BirthDate                   DateTime?
+  country                     String?
+  lastLogin                   DateTime?
+  institution                 String?
+  phoneNumber                 String?   @unique
+  linkedin                    String?   @unique
+  Instagram                   String?
+  Facebook                    String?
+  X                           String?
+}
+
+
+//////////////////////////
+//     Course Models    //
+//////////////////////////
+
+
+
+model Course {
+  id                  String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId              String? 
+  email               String?  
+  content             String
+  type                String?
+  mainTopic           String?
+  language            String?
+  photo               String?
+  CreatedAt           DateTime @default(now())
+  endedAt             DateTime?
+}
+
+
+/////////////////////////////
+// referral Program Models //
+/////////////////////////////
+
+
+
+model UserReferredBy {
+  id                          String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId                      String   @unique
+  referredUserId              String
+  email                       String   @unique
+  referredUserEmail           String  
+  Date                        String
+  refCodeUsed                 String
+  ReferringType               ReferringType
+  ReferringSource             String?
+}
+
+
+
+//////////////////////////
+//     Utils Models     //
+//////////////////////////
+
+
+
+model Token {
+  id                   String   @id @map("_id") @default(auto()) @db.ObjectId
+  UserId               String       @unique
+  email                String       @unique
+  token                String
+  tokenExpires         DateTime
+  tokenType            TokenType   
+}
+
+model Streaker {
+  id                      String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId                  String   @unique
+  email                   String   @unique
+  dateSign                DateTime @default(now())
+  courseDo                Boolean  @default(false)
+  quizDo                  Boolean  @default(false)
+}
+
+model Notifier {
+  id                      String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId                  String   @unique 
+  email                   String   @unique
+  Notify                  DateTime @default(now())
+  NotifyType              NotificationType @default(not_set)
+}
+
+
+model Transaction {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  email             String   @unique
+  duration          String
+  subscriptionStart DateTime
+  subscriptionEnd   DateTime
+  orderId           String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  refunded          Boolean
+}
+
+
+
+//////////////////////////
+//   Quiz Game Models   //
+//////////////////////////
+
+model Game {
+  id          String     @id @map("_id") @default(auto()) @db.ObjectId
+  userId      String     // reference to User.id
+  timeStarted DateTime
+  topic       String
+  timeEnded   DateTime?
+  gameType    GameType
+  language    String
+  questions   Question[] @relation("GameQuestions")
+}
+
+model Question {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  question          String
+  answer            String
+  gameId            String
+  options           Json?
+  percentageCorrect Float?
+  questionType      GameType
+  userAnswer        String?
+  isCorrect         Boolean?
+  game              Game     @relation("GameQuestions", fields: [gameId], references: [id])
+}
+
+model TopicCount {
+  id    String @id @map("_id") @default(auto()) @db.ObjectId
+  topic String @unique
+  count Int
+}
+
+//////////////////////////
+//       Enums          //
+//////////////////////////
+
+enum GameType {
+  mcq
+  open_ended
+}
+
+enum TokenType {
+  email_validation
+  password_reset
+}
+
+enum NotificationType {
+  email_validation
+  password_reset
+  Streak_course
+  Streak_quiz
+  Streak_sign
+  Streak_hit
+  all_user
+  update
+  new_feature
+  not_set
+}
+
+enum planType {
+  trial_monthly
+  trial_yearly
+  charged_monthly
+  charged_yearly
+}
+
+enum ReferringType {
+  sign
+  trial_monthly
+  trial_yearly
+  charged_monthly
+  charged_yearly
 }
