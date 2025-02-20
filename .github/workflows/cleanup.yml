@@ -1,0 +1,24 @@
+name: Close Issue & Delete Branch on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close Related Issue & Delete Branch
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PR_BRANCH=${{ github.event.pull_request.head.ref }}
+          ISSUE_NUMBER=$(echo "$PR_BRANCH" | grep -oP '(?<=issue-)\d+')
+
+          if [ -n "$ISSUE_NUMBER" ]; then
+            # Close issue
+            gh issue close $ISSUE_NUMBER --repo ${{ github.repository }} --comment "✅ PR merged. Issue closed."
+          fi
+
+          # Delete branch
+          gh api --method DELETE /repos/${{ github.repository }}/git/refs/heads/$PR_BRANCH
