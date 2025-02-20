@@ -17,17 +17,17 @@
 ## 🛠️ Tech Stack  
 
 ### **Backend**  
-- **Framework**: Node.js with Express.js  
+- **Framework**: Node.ts with Express.ts
 - **Language**: TypeScript  
-- **Database**: Azure Table Storage with Prisma ORM  
+- **Database**: MongoDB with Prisma ORM  
 - **Authentication**: NextAuth.js with JWT for secure user sessions  
 - **API**: REST API documented with Swagger  
 - **Real-time Features**: Socket.IO  
 - **PDF Processing & AI Models**: LangChain, OpenAI API, DeepL API  
-- **File Storage**: Azure Blob Storage  
+- **File Storage**: Cloudinary
 
 ### **DevOps & Infrastructure**  
-- **Hosting**: Vercel (Frontend) & Azure (Backend)  
+- **Hosting**: Railway (Backend)  
 - **Containerization**: Docker  
 - **CI/CD**: GitHub Actions  
 - **Monitoring**: Google Analytics  
