@@ -11,28 +11,29 @@ generator client {
 // Shared Helper Models //
 //////////////////////////
 
-// (You can add common types, enums or helper models here if needed)
+// (Common types, enums, or helper models can be added here)
 
 //////////////////////////
 //  Application Models  //
 //////////////////////////
 
-
 model UserAuth {
   id                   String     @id @map("_id") @default(auto()) @db.ObjectId
   email                String     @unique
-  password             String
+  password             String     // Ensure hashing before storing
 }
 
 model User {
   id                   String      @id @map("_id") @default(auto()) @db.ObjectId
-  userId               String    @unique
-  email                String    @unique
-  isVerified           Boolean   @default(false)
+  userId               String      @unique
+  email                String      @unique
+  isVerified           Boolean     @default(false)
   firstName            String
-  plan                 planType  
   lastLogin            DateTime?
   imgThumbnail         String?
+  plan                 planType  
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 }
 
 model UserInfo {
@@ -43,23 +44,20 @@ model UserInfo {
   ExpirationSubscription      DateTime?
   firstName                   String
   lastName                    String?
-  BirthDate                   DateTime?
+  birthDate                   DateTime?
   country                     String?
   lastLogin                   DateTime?
   institution                 String?
   phoneNumber                 String?   @unique
   linkedin                    String?   @unique
-  Instagram                   String?
-  Facebook                    String?
-  X                           String?
+  instagram                   String?
+  facebook                    String?
+  x                           String?
 }
-
 
 //////////////////////////
 //     Course Models    //
 //////////////////////////
-
-
 
 model Course {
   id                  String   @id @map("_id") @default(auto()) @db.ObjectId
@@ -70,16 +68,13 @@ model Course {
   mainTopic           String?
   language            String?
   photo               String?
-  CreatedAt           DateTime @default(now())
+  createdAt           DateTime @default(now())
   endedAt             DateTime?
 }
 
-
 /////////////////////////////
-// referral Program Models //
+// Referral Program Models //
 /////////////////////////////
-
-
 
 model UserReferredBy {
   id                          String   @id @map("_id") @default(auto()) @db.ObjectId
@@ -87,26 +82,22 @@ model UserReferredBy {
   referredUserId              String
   email                       String   @unique
   referredUserEmail           String  
-  Date                        String
+  date                        DateTime
   refCodeUsed                 String
-  ReferringType               ReferringType
-  ReferringSource             String?
+  referringType               ReferringType
+  referringSource             String?
 }
-
-
 
 //////////////////////////
 //     Utils Models     //
 //////////////////////////
 
-
-
 model Token {
   id                   String   @id @map("_id") @default(auto()) @db.ObjectId
-  UserId               String       @unique
-  email                String       @unique
+  userId               String   @unique
+  email                String   @unique
   token                String
-  tokenExpires         DateTime
+  tokenExpires         DateTime @map("tokenExpires") @default(now()) @db.Index(ttl: 3600)
   tokenType            TokenType   
 }
 
@@ -123,10 +114,9 @@ model Notifier {
   id                      String   @id @map("_id") @default(auto()) @db.ObjectId
   userId                  String   @unique 
   email                   String   @unique
-  Notify                  DateTime @default(now())
-  NotifyType              NotificationType @default(not_set)
+  notify                  DateTime @default(now())
+  notifyType              NotificationType @default(not_set)
 }
-
 
 model Transaction {
   id                String   @id @map("_id") @default(auto()) @db.ObjectId
@@ -140,15 +130,13 @@ model Transaction {
   refunded          Boolean
 }
 
-
-
 //////////////////////////
 //   Quiz Game Models   //
 //////////////////////////
 
 model Game {
   id          String     @id @map("_id") @default(auto()) @db.ObjectId
-  userId      String     // reference to User.id
+  userId      String     // Reference to User.id
   timeStarted DateTime
   topic       String
   timeEnded   DateTime?
@@ -193,10 +181,10 @@ enum TokenType {
 enum NotificationType {
   email_validation
   password_reset
-  Streak_course
-  Streak_quiz
-  Streak_sign
-  Streak_hit
+  streak_course
+  streak_quiz
+  streak_sign
+  streak_hit
   all_user
   update
   new_feature
