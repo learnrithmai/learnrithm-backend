@@ -17,35 +17,32 @@ generator client {
 //  Application Models  //
 //////////////////////////
 
-model UserAuth {
+model User {
   id                   String     @id @map("_id") @default(auto()) @db.ObjectId
   email                String     @unique
   password             String     // Ensure hashing before storing
 }
 
-model User {
+model UserInfo {
   id                   String      @id @map("_id") @default(auto()) @db.ObjectId
   userId               String      @unique
   email                String      @unique
   isVerified           Boolean     @default(false)
-  firstName            String
+  Name                 String
   lastLogin            DateTime?
   imgThumbnail         String?
-  plan                 planType  
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  plan                 planType?  
 }
 
-model UserInfo {
+model UserDetails {
   id                          String    @id @map("_id") @default(auto()) @db.ObjectId
   userId                      String    @unique 
   email                       String?   @unique
-  SubscriptionPlan            planType
+  plan                        planType?
   ExpirationSubscription      DateTime?
-  firstName                   String
-  lastName                    String?
+  Name                        String
   birthDate                   DateTime?
-  country                     String?
+  country                     String
   lastLogin                   DateTime?
   institution                 String?
   phoneNumber                 String?   @unique
@@ -53,6 +50,7 @@ model UserInfo {
   instagram                   String?
   facebook                    String?
   x                           String?
+  imgThumbnail                String?
 }
 
 //////////////////////////
@@ -88,6 +86,14 @@ model UserReferredBy {
   referringSource             String?
 }
 
+model referralCode {
+  id                          String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId                      String
+  email                       String
+  code                        String  @unique
+  referredAmount              Int     @default(0)
+}
+
 //////////////////////////
 //     Utils Models     //
 //////////////////////////
@@ -97,7 +103,7 @@ model Token {
   userId               String   @unique
   email                String   @unique
   token                String
-  tokenExpires         DateTime @map("tokenExpires") @default(now()) @db.Index(ttl: 3600)
+  tokenExpires         DateTime @map("tokenExpires") @default(now())
   tokenType            TokenType   
 }
 

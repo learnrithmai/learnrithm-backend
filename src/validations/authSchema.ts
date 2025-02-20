@@ -1,70 +1,71 @@
-import { stringNonEmpty } from "@/utils/zodUtils";
-import { CountrySchema, credinalSchema, emailSchema, refineStatesSchema, usernameSchema } from "@/validations";
-import { Gender, RiwayaType, RoleType } from "@prisma/client";
-import { isValidPhoneNumber } from 'libphonenumber-js';
 import { z } from "zod";
+import { emailSchema, CountrySchema } from "@/validations";
 
-
-
-// * --------------------------------------------------------------------------------
-// *  ------------------  🔰  Shared Base Schema  ----------------------
-
-export const baseSchema = {
-    body: z.object({
-        firstName: credinalSchema,
-        lastName: credinalSchema,
-        email: emailSchema,
-        password: stringNonEmpty().min(6),
-        country: CountrySchema,
-        phone: z.string().refine(isValidPhoneNumber, { message: "Incorrect Phone Number" }).or(z.literal("")),
-    })
-};
-
-
-// * --------------------------------------------------------------------------------
-// *  ------------------  👨‍🎓  User SignUp Schema  ----------------------
-
+// ────────────────────────────────────────────────────────────────
+// Register User Schema
+// ────────────────────────────────────────────────────────────────
 
 export const registerUserSchema = {
-    body: baseSchema.body.extend({
-        riwaya: z.nativeEnum(RiwayaType),
-    }).superRefine(refineStatesSchema),
+  body: z.object({
+    name: z.string().min(1, { message: "Name is required" }),
+    email: emailSchema,
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+    country: CountrySchema,
+    referralCode: z.string().optional(),
+  }),
 };
 
 export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
 
-
-// * --------------------------------------------------------------------------------
-// *  -----------------------------  🔐  Auth  --------------------------------------
+// ────────────────────────────────────────────────────────────────
+// Login Schema
+// ────────────────────────────────────────────────────────────────
 
 export const loginSchema = {
-    body: baseSchema.body.pick({ password: true }).extend({
-        identifier: emailSchema.or(usernameSchema),
-    }),
+  body: z.object({
+    identifier: z.string().min(1, { message: "Identifier is required" }),
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  }),
 };
 
 export type LoginBody = z.infer<typeof loginSchema.body>;
 
+// ────────────────────────────────────────────────────────────────
+// Forgot Password Schema
+// ────────────────────────────────────────────────────────────────
+
 export const forgotPasswordSchema = {
-    body: baseSchema.body.pick({ email: true }),
+  body: z.object({
+    email: emailSchema,
+  }),
 };
 
 export type ForgotPasswordBody = z.infer<typeof forgotPasswordSchema.body>;
 
+// ────────────────────────────────────────────────────────────────
+// Reset Password Schema
+// ────────────────────────────────────────────────────────────────
+
 export const resetPasswordSchema = {
-    query: z.object({
-        token: z.string(),
-    }),
-    body: baseSchema.body.pick({ password: true }),
+  query: z.object({
+    token: z.string(),
+  }),
+  body: z.object({
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  }),
 };
 
 export type ResetPasswordQuery = z.infer<typeof resetPasswordSchema.query>;
 export type ResetPasswordBody = z.infer<typeof resetPasswordSchema.body>;
 
+// ────────────────────────────────────────────────────────────────
+// Verify Email Schema
+// ────────────────────────────────────────────────────────────────
+
 export const verifyEmailSchema = {
-    query: z.object({
-        token: z.string(),
-    }),
+  query: z.object({
+    token: z.string(),
+  }),
 };
 
-export type verifyEmailQuery = z.infer<typeof verifyEmailSchema.query>;
+export type VerifyEmailQuery = z.infer<typeof verifyEmailSchema.query>;

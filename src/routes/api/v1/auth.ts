@@ -1,38 +1,52 @@
-import {
-    forgotPassword,
-    login,
-    logout,
-    refreshTokens,
-    registerUser,
-    resetPassword,
-    sendVerificationEmail,
-} from "@controllers/authController";
-import { verifyEmail } from "@/utils/authUtils";
 import express, { Router } from "express";
 import validate from "express-zod-safe";
-import {
-    loginSchema,
-    forgotPasswordSchema,
-    resetPasswordSchema,
-    verifyEmailSchema,
-    registerUserSchema,
-} from "@/validations/authSchema";
 import auth from "@/middleware/auth/passportJWTAuth";
+
+import {
+  registerUser,
+  login,
+  logout,
+  refreshTokens,
+  forgotPassword,
+  resetPassword,
+  sendVerificationEmail,
+} from "@controllers/auth-controller";
+import { verifyEmail } from "@/utils/authUtils";
+import {
+  registerUserSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  verifyEmailSchema,
+} from "@/validations/authSchema";
 
 const router = Router({ mergeParams: true });
 
-router.post("/register-user", validate(registerUserSchema), registerUser);
+// Register a new user
+router.post("/register", validate(registerUserSchema), registerUser);
+
+// User login
 router.post("/login", validate(loginSchema), login);
+
+// User logout
 router.post("/logout", logout);
+
+// Refresh auth tokens
 router.post("/refresh-tokens", refreshTokens);
+
+// Forgot password: send reset instructions
 router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
+
+// Reset password with provided token
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
+
+// Send a verification email (requires an authenticated user)
 router.post("/send-verification-email", auth(), sendVerificationEmail);
+
+// Verify email using the token from query parameters
 router.post("/verify-email", validate(verifyEmailSchema), verifyEmail);
 
 export default router;
-
-//*  ------------------- Swagger API Documentation -------------------
 
 /**
  * @swagger
@@ -87,9 +101,7 @@ export default router;
  *                   $ref: '#/components/schemas/AuthTokens'
  *       "400":
  *         $ref: '#/components/responses/DuplicateEmail'
- */
-
-/**
+ *
  * @swagger
  * /auth/login:
  *   post:
@@ -132,12 +144,7 @@ export default router;
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *             example:
- *               code: 401
- *               message: Invalid email or password
- */
-
-/**
+ *
  * @swagger
  * /auth/logout:
  *   post:
@@ -155,15 +162,13 @@ export default router;
  *               refreshToken:
  *                 type: string
  *             example:
- *               refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
+ *               refreshToken: <your_refresh_token_here>
  *     responses:
  *       "204":
  *         description: No content
  *       "404":
  *         $ref: '#/components/responses/NotFound'
- */
-
-/**
+ *
  * @swagger
  * /auth/refresh-tokens:
  *   post:
@@ -181,7 +186,7 @@ export default router;
  *               refreshToken:
  *                 type: string
  *             example:
- *               refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZWJhYzUzNDk1NGI1NDEzOTgwNmMxMTIiLCJpYXQiOjE1ODkyOTg0ODQsImV4cCI6MTU4OTMwMDI4NH0.m1U63blB0MLej_WfB7yC2FTMnCziif9X8yzwDEfJXAg
+ *               refreshToken: <your_refresh_token_here>
  *     responses:
  *       "200":
  *         description: OK
@@ -191,9 +196,7 @@ export default router;
  *               $ref: '#/components/schemas/AuthTokens'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
- */
-
-/**
+ *
  * @swagger
  * /auth/forgot-password:
  *   post:
@@ -219,9 +222,7 @@ export default router;
  *         description: No content
  *       "404":
  *         $ref: '#/components/responses/NotFound'
- */
-
-/**
+ *
  * @swagger
  * /auth/reset-password:
  *   post:
@@ -259,17 +260,12 @@ export default router;
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *             example:
- *               code: 401
- *               message: Password reset failed
- */
-
-/**
+ *
  * @swagger
  * /auth/send-verification-email:
  *   post:
  *     summary: Send verification email
- *     description: An email will be sent to verify email.
+ *     description: An email will be sent to verify the user's email address.
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
@@ -278,13 +274,11 @@ export default router;
  *         description: No content
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
- */
-
-/**
+ *
  * @swagger
  * /auth/verify-email:
  *   post:
- *     summary: verify email
+ *     summary: Verify email
  *     tags: [Auth]
  *     parameters:
  *       - in: query
@@ -292,17 +286,14 @@ export default router;
  *         required: true
  *         schema:
  *           type: string
- *         description: The verify email token
+ *         description: The verification token
  *     responses:
  *       "204":
  *         description: No content
  *       "401":
- *         description: verify email failed
+ *         description: Email verification failed
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *             example:
- *               code: 401
- *               message: verify email failed
  */

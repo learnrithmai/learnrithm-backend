@@ -3,11 +3,9 @@
 /* eslint-disable security/detect-unsafe-regex */
 /* eslint-disable unicorn/no-process-exit */
 
-import log from "@/utils/chalkLogger";
-import { arrayFromString, errorMap, preprocessUrl, handleZodError, stringNonEmpty } from "@/utils/zodUtils";
+import { arrayFromString, preprocessUrl, handleZodError, stringNonEmpty } from "@/utils/zodUtils";
 import { arabicErrorMap } from "@/validations";
 
-import createError from "http-errors";
 import { z } from "zod";
 import { zu } from "zod_utilz";
 
@@ -19,7 +17,7 @@ const postgresUriRegex =
 
 //? -------- Error Maps ---------
 const tokenExpireErrorMap = zu.makeErrorMap({
-    invalid_string: (err) => `${err.data} : must be a duration string like "2h", "30m", "10s", etc. `,
+    invalid_string: (err: { data: any; }) => `${err.data} : must be a duration string like "2h", "30m", "10s", etc. `,
 });
 
 //? -------- Sub Schema ---------

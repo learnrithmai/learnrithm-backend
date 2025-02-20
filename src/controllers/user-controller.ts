@@ -1,10 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { Request, Response, NextFunction } from "express";
 import { hash } from "bcryptjs";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
-
-const prisma = new PrismaClient();
-
+import prisma from "@/config/db/prisma";
 /**
  * Get a single user by ID.
  */
@@ -38,16 +35,15 @@ export const getAllUsers = asyncWrapper(
     const limitNum = Number(limit);
     const offsetNum = (pageNum - 1) * limitNum;
 
-    // Build query filter (search by email or mName)
+    // Build query filter (search by email or firstName)
     const query: any = {};
     if (search) {
-      // Escape special characters in the search string
       const escapedSearch = search
         .toString()
-        .replaceAll(/[$()*+.?[\\\]^{|}]/g, "\\$&");
+        .replace(/[$()*+.?[\\\]^{|}]/g, "\\$&");
       query.OR = [
         { email: { contains: escapedSearch, mode: "insensitive" } },
-        { mName: { contains: escapedSearch, mode: "insensitive" } },
+        { firstName: { contains: escapedSearch, mode: "insensitive" } },
       ];
     }
 
@@ -55,7 +51,7 @@ export const getAllUsers = asyncWrapper(
       where: query,
       skip: offsetNum,
       take: limitNum,
-      orderBy: { date: "desc" },
+      orderBy: { createdAt: "desc" },
     });
 
     const totalUsers = await prisma.user.count({ where: query });
@@ -75,118 +71,102 @@ export const getAllUsers = asyncWrapper(
 );
 
 /**
- * Create a new user.
- */
-export const createUser = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const {
-      email,
-      mName,
-      password,
-      type,
-      plan,
-      signUpApp,
-      refUserMail,
-      country,
-    } = req.body;
-
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ errorMsg: "Email and password are required" });
-    }
-
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      return res.status(409).json({ errorMsg: "User already exists" });
-    }
-
-    // Hash the password
-    const hashedPassword = await hash(password, 10);
-
-    // Create user record
-    const newUser = await prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        mName,
-        password: hashedPassword,
-        type: type || "free",
-        plan: plan || "hobby",
-        signUpApp: signUpApp || "AITeacher",
-        refUserMail,
-        country,
-        // emailToken, emailTokenExpires, reset tokens etc. can be set later as needed
-      },
-    });
-
-    res.status(201).json({
-      success: `User ${newUser.email} created successfully!`,
-      user: newUser,
-    });
-  }
-);
-
-/**
  * Update an existing user.
+ * Updates the User record and, if provided, the password in the UserAuth record.
  */
 export const updateUser = asyncWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    const { email, mName, password, country } = req.body;
+    const { updateType } = req.params;
+    //Update By Type
+    if (updateType === "UpdateInfo") {
 
-    // Check if the user exists
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-    if (!user) {
-      return res.status(404).json({ errorMsg: "User not found" });
+      const { name, lastLogin, imgThumbnail, plan, id, ExpirationSubscription } = req.body;
+
+      // Check if the user ID is provided
+      if (!id) {
+        return res.status(400).json({ errorMsg: "User ID is required" });
+      }
+
+      // Check if there is any data to update
+      if (!name && !lastLogin && !imgThumbnail && !plan && !ExpirationSubscription) {
+        return res.status(400).json({ errorMsg: "No data to update" });
+      }
+
+      //check the plan with Expiration date
+      if (plan && !ExpirationSubscription) {
+        return res.status(400).json({ errorMsg: "Expiration Subscription is required" });
+      }
+
+      // Check if the user exists in the User model
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+      if (!user) {
+        return res.status(404).json({ errorMsg: "User not found" });
+      }
+
+      // Update the User record
+      const updatedUserInfo = await prisma.user.update({
+        where: { id },
+        data: {
+          name,
+          lastLogin,
+          imgThumbnail,
+          plan,
+        },
+      });
+
+      await prisma.UserDetails.update({
+        where: { id },
+        data: {
+          name,
+          lastLogin,
+          imgThumbnail,
+          plan,
+          ExpirationSubscription: ExpirationSubscription,
+        },
+      });
+
+      res.status(200).json({
+        success: `User ${updatedUserInfo.email} updated successfully`
+      });
+
+    } else if (updateType === "UpdatePassword") {
+      const { id, password } = req.body;
+
+      // Check if the user ID is provided
+      if (!id) {
+        return res.status(400).json({ errorMsg: "User ID is required" });
+      }
+
+      // Check if the password is provided
+      if (!password) {
+        return res.status(400).json({ errorMsg: "Password is required" });
+      }
+
+      // Check if the user exists in the UserAuth model
+      const userCredentials = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!userCredentials) {
+        return res.status(404).json({ errorMsg: "User not found" });
+      }
+
+      // Hash the password
+      const hashedPassword = await hash(password, 10);
+
+      // Update the UserAuth record
+      const updatedUserCredentials = await prisma.user.update({
+        where: { id },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      res.status(200).json({
+        success: `User ${updatedUserCredentials.email} password updated successfully`,
+      });
     }
-
-    // Hash new password if provided; otherwise retain the existing hash
-    const hashedPassword = password ? await hash(password, 10) : user.password;
-
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        email,
-        mName,
-        password: hashedPassword,
-        country,
-      },
-    });
-
-    res.status(200).json({
-      success: `User ${updatedUser.email} updated successfully!`,
-      user: updatedUser,
-    });
-  }
-);
-
-/**
- * Delete a user.
- * Note: Deletion should be allowed only for admin users per your policy.
- */
-export const deleteUser = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-
-    // Check if the user exists
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-    if (!user) {
-      return res.status(404).json({ errorMsg: "User not found" });
-    }
-
-    await prisma.user.delete({
-      where: { id },
-    });
-
-    res.status(200).json({
-      success: `User ${user.email} deleted successfully!`,
-    });
   }
 );

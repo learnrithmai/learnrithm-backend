@@ -1,23 +1,14 @@
 import express, { Router } from "express";
 import validate from "express-zod-safe";
-import { loginSchema } from "@/validations/authSchema";
 import auth from "@/middleware/auth/passportJWTAuth";
-import { registerUser } from "@/controllers/authController";
+import {
+  getUser,
+  updateUser
+} from "@controllers/user-controller";
+import { updateUserSchema } from "@/validations/userSchema";
+// Optionally, add a query validation schema for GET /users if available
 
-const router = express.Router();
-
-router
-  .route("/")
-  .post(auth("manageUsers"), validate(loginSchema), registerUser)
-  .get(auth("getUsers"), validate(loginSchema), registerUser);
-
-router
-  .route("/:userId")
-  .get(auth("getUsers"), validate(loginSchema), registerUser)
-  .patch(auth("manageUsers"), validate(loginSchema), registerUser)
-  .delete(auth("manageUsers"), validate(loginSchema), registerUser);
-
-export default router;
+const router: Router = express.Router();
 
 /**
  * @swagger
@@ -59,8 +50,8 @@ export default router;
  *                 minLength: 8
  *                 description: At least one number and one letter
  *               role:
- *                  type: string
- *                  enum: [user, admin]
+ *                 type: string
+ *                 enum: [user, admin]
  *             example:
  *               name: fake name
  *               email: fake@example.com
@@ -72,7 +63,7 @@ export default router;
  *         content:
  *           application/json:
  *             schema:
- *                $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/User'
  *       "400":
  *         $ref: '#/components/responses/DuplicateEmail'
  *       "401":
@@ -145,7 +136,6 @@ export default router;
  *       "403":
  *         $ref: '#/components/responses/Forbidden'
  */
-
 /**
  * @swagger
  * /users/{id}:
@@ -168,7 +158,7 @@ export default router;
  *         content:
  *           application/json:
  *             schema:
- *                $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/User'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
@@ -217,7 +207,7 @@ export default router;
  *         content:
  *           application/json:
  *             schema:
- *                $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/User'
  *       "400":
  *         $ref: '#/components/responses/DuplicateEmail'
  *       "401":
@@ -250,3 +240,9 @@ export default router;
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
+router
+  .route("/:id")
+  .get(auth("getUsers"), getUser)
+  .patch(auth("manageUsers"), validate(updateUserSchema), updateUser)
+
+export default router;
