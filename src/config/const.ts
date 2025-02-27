@@ -22,7 +22,6 @@ export const readyStates = new Map<number, string>([
 ]);
 
 // for user roles
-
 type RoleRights = {
     [role: string]: string[];
 };
@@ -36,7 +35,6 @@ export const roles: string[] = Object.keys(allRoles);
 export const roleRights: Map<string, string[]> = new Map(Object.entries(allRoles));
 
 // for token types
-
 type TokenTypes = {
     ACCESS: string;
     REFRESH: string;
@@ -48,6 +46,6 @@ type TokenTypes = {
 export const tokenTypes: TokenTypes = {
     ACCESS: "access",
     REFRESH: "refresh",
-    RESET_PASSWORD: "resetPassword",
-    VERIFY_EMAIL: "verifyEmail",
+    RESET_PASSWORD: "password_reset",
+    VERIFY_EMAIL: "email_validation",
 };
