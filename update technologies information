@@ -5,11 +5,11 @@
 ---
 
 ## 🚀 Features  
-- **Centralized Dashboard**: Manage AI Teacher and AI Quiz in one place for a smooth learning journey.  
+- **Centralized Dashboard**: Manage AI Learning in one place for a smooth learning journey.  
 - **AI-Powered Content Generation**: Using OpenAI for quizzes and course content.  
-- **Multi-language Support**: DeepL and next-i18next for accurate translations.  
+- **Multi-language Support**: DeepL and GPT model for accurate translations.  
 - **Real-time Collaboration**: Socket.IO for live updates and collaborative features.  
-- **File Management**: Cloudinary and Azure Blob Storage for PDFs and media.  
+- **File Management**: Cloudinary for PDFs and media.  
 - **Secure & Scalable Architecture**: Node.js with Express, TypeScript, and Prisma ORM.  
 
 ---
@@ -17,7 +17,7 @@
 ## 🛠️ Tech Stack  
 
 ### **Backend**  
-- **Framework**: Node.ts with Express.ts
+- **Framework**: Node.js with Express.js
 - **Language**: TypeScript  
 - **Database**: MongoDB with Prisma ORM  
 - **Authentication**: NextAuth.js with JWT for secure user sessions  
