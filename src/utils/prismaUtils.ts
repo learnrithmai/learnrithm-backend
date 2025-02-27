@@ -1,6 +1,5 @@
 import prisma from "@/config/db/prisma";
 import { Token } from "@prisma/client";
-import bcrypt from "bcrypt";
 
 export async function isEmailTaken(email: string, excludeUserId?: string): Promise<boolean> {
     const user = await prisma.user.findFirst({
@@ -15,13 +14,13 @@ export async function isEmailTaken(email: string, excludeUserId?: string): Promi
 }
 
 export async function getUserFullName(userId: string): Promise<string> {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.userInfo.findUnique({
         where: { id: userId },
     });
     if (!user) {
         throw new Error("User not found");
     }
-    return `${user.firstName} ${user.lastName}`;
+    return `${user.Name}`;
 }
 
 /**

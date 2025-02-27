@@ -21,6 +21,7 @@ model User {
   id                   String     @id @map("_id") @default(auto()) @db.ObjectId
   email                String     @unique
   password             String     // Ensure hashing before storing
+  createdAt            DateTime?  @default(now())
 }
 
 model UserInfo {
@@ -31,14 +32,16 @@ model UserInfo {
   Name                 String
   lastLogin            DateTime?
   imgThumbnail         String?
-  plan                 planType?  
+  plan                 planType?   @default(trial_monthly)
+  ExpirationSubscription DateTime?
 }
 
 model UserDetails {
   id                          String    @id @map("_id") @default(auto()) @db.ObjectId
   userId                      String    @unique 
   email                       String?   @unique
-  plan                        planType?
+  isVerified                  Boolean   @default(false)
+  plan                        planType? @default(trial_monthly)
   ExpirationSubscription      DateTime?
   Name                        String
   birthDate                   DateTime?
@@ -74,7 +77,7 @@ model Course {
 // Referral Program Models //
 /////////////////////////////
 
-model UserReferredBy {
+model userReferredBy {
   id                          String   @id @map("_id") @default(auto()) @db.ObjectId
   userId                      String   @unique
   referredUserId              String
@@ -182,6 +185,8 @@ enum GameType {
 enum TokenType {
   email_validation
   password_reset
+  access
+  refresh
 }
 
 enum NotificationType {

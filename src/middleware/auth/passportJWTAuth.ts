@@ -1,14 +1,16 @@
 import passport, { AuthenticateCallback } from "passport";
 import createHttpError from "http-errors";
-import ApiError from "@/utils/apiError";
 import { roleRights } from "@/config/const";
 import { Request, Response, NextFunction } from "express";
-import { AuthUser as ZenUser } from "@zenstackhq/runtime";
 
-// interface User extends Express.User {
-//     role: string;
-//     id: string;
-// }
+declare global {
+    namespace Express {
+        interface User {
+            role: string;
+            id: string;
+        }
+    }
+}
 
 /**
  * Verify callback for passport authentication.
@@ -29,22 +31,21 @@ const verifyCallback =
         reject: (reason?: any) => void,
         requiredRights: string[]
     ): AuthenticateCallback =>
-    async (err, user, info): Promise<void> => {
-        if (err || info || !user) {
-            return reject(createHttpError.Unauthorized("Please authenticate"));
-        }
-        req.user = user;
-
-        if (requiredRights.length > 0) {
-            const userRights = roleRights.get(user.role) || [];
-            const hasRequiredRights = requiredRights.every((requiredRight) => userRights.includes(requiredRight));
-            if (!hasRequiredRights && req.params.userId !== user.id) {
-                return reject(createHttpError.Forbidden("Forbidden"));
+        async (err, user, info): Promise<void> => {
+            if (err || info || !user) {
+                return reject(createHttpError.Unauthorized("Please authenticate"));
             }
-        }
 
-        resolve();
-    };
+            if (requiredRights.length > 0) {
+                const userRights = roleRights.get(user.role) || [];
+                const hasRequiredRights = requiredRights.every((requiredRight) => userRights.includes(requiredRight));
+                if (!hasRequiredRights && req.params.userId !== user.id) {
+                    return reject(createHttpError.Forbidden("Forbidden"));
+                }
+            }
+
+            resolve();
+        };
 
 /**
  * Middleware to authenticate and authorize users based on JWT and required rights.
@@ -59,16 +60,16 @@ const verifyCallback =
  */
 const auth =
     (...requiredRights: string[]): ((req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            passport.authenticate("jwt", { session: false }, verifyCallback(req, resolve, reject, requiredRights))(
-                req,
-                res,
-                next
-            );
-        })
-            .then(() => next())
-            .catch((error: any) => next(error));
-    };
+        async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+            return new Promise((resolve, reject) => {
+                passport.authenticate("jwt", { session: false }, verifyCallback(req, resolve, reject, requiredRights))(
+                    req,
+                    res,
+                    next
+                );
+            })
+                .then(() => next())
+                .catch((error: any) => next(error));
+        };
 
 export default auth;

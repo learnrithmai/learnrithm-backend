@@ -7,7 +7,7 @@ import { emailSchema, CountrySchema } from "@/validations";
 
 export const registerUserSchema = {
   body: z.object({
-    name: z.string().min(1, { message: "Name is required" }),
+    Name: z.string().min(1, { message: "Name is required" }),
     email: emailSchema,
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
     country: CountrySchema,

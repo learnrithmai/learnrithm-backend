@@ -1,11 +1,8 @@
-export interface IUser {
-    firstName: string;
-    lastName: string;
+export interface User {
+    Name: string;
     email: string;
-    password: string;
-    paymentType: string;
-    ExperiationPaymentDate?: string;
-    profilePic: string;
-    coverImg: string;
-    isEmailVerified: boolean;
+    plan: string;
+    imgThumbnail: string;
+    isVerified: boolean;
+    ExpirationSubscription: Date;
 }
