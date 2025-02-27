@@ -1,19 +1,48 @@
 {
   "name": "learnrithm-backend",
-  "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-    "start": "node dist/server.js",
-    "dev": "nodemon src/server.ts",
-    "build": "rimraf dist && tsc"
+  "author": "chalabi-ayoub",
+  "private": true,
+  "version": "2.0.0",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=14.16"
   },
+  "scripts": {
+    "dev": "tsx  watch --env-file=.env.development.local  src/server.ts",
+    "build": "npm run clean && tsup src --out-dir dist",
+    "build:start": "tsx watch --env-file=.env  dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:original": "tsx --test \"**/*.test.ts\"",
+    "test:watch:original": "tsx --test --watch \"**/*.test.ts\"",
+    "lint": "eslint --ext .ts,.tsx src --fix --quiet",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "type-check": "tsc --noEmit",
+    "prepare": "husky",
+    "lint-stages": "npm run lint && npm run type-check && npm run format",
+    "clean": "del-cli dist",
+    "zenstack:generate": "zenstack generate",
+    "dev:prisma:migrate": "dotenv -e .env.development.local -- prisma migrate dev --skip-seed ",
+    "dev:prisma:db": "dotenv -e .env.development.local -- prisma db push ",
+    "dev:prisma:studio": "dotenv -e .env.development.local -- prisma studio",
+    "dev:prisma:seed": "dotenv -e .env.development.local -- ts-node prisma/seed/seed.ts",
+    "dev:prisma:reset": "dotenv -e .env.development.local -- prisma migrate reset",
+    "dev:prisma:reset:force": "dotenv -e .env.development.local -- prisma migrate reset -f",
+    "prisma:migrate": "prisma migrate dev --skip-seed",
+    "prisma:db": "prisma db push",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "ts-node prisma/seed/seed.ts ",
+    "prisma:reset": "prisma migrate reset",
+    "prisma:reset:force": "prisma migrate reset -f"
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/learnrithmai/learnrithm-backend.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/learnrithmai/learnrithm-backend/issues"
   },

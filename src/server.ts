@@ -100,7 +100,7 @@ app.use(errorHandler);
 async function startServer() {
   try {
     // Connect to the PostgreSQL database
-    console.log("Connected to PostgreSQL .... 🐲");
+    console.log("Connected to MongoDB .... 🐲");
     await prisma.$connect();
 
     // Manually log the database connection details
