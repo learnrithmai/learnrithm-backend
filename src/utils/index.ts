@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-useless-undefined */
 import crypto from "node:crypto";
 import safeRegex from "safe-regex";
 

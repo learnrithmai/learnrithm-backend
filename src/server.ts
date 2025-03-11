@@ -114,9 +114,8 @@ async function startServer() {
 
     // Start the server
     app.listen(PORT, () => logger.database(`Server running on port `, `${PORT}`));
-  } catch (error: any) {
-    logger.error("Failed to connect to the database", error);
-    // eslint-disable-next-line unicorn/no-process-exit
+  } catch (error) {
+    logger.error("Failed to connect to the database", error as string);
     process.exit(1);
   }
 }

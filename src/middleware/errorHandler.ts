@@ -2,7 +2,7 @@ import axios from "axios";
 import { isDev } from "@/config/const";
 import { errorNotification } from "@/config/logging/notifier";
 import log from "@/utils/chalkLogger";
-import { Response, Request, NextFunction } from "express";
+import { Response, Request } from "express";
 import { AxiosErrorDetails, CustomError } from "@/types/errors";
 
 /**
@@ -21,7 +21,7 @@ import { AxiosErrorDetails, CustomError } from "@/types/errors";
  *
  * app.use(errorHandler);
  */
-export const errorHandler = (err: CustomError, req: Request, res: Response, next: NextFunction): void => {
+export const errorHandler = (err: CustomError, req: Request, res: Response): void => {
     // Use the status property of the error, or default to 500
     const statusCode = err.status || Number(err?.response?.status) || 500;
     let axiosErrors: AxiosErrorDetails = {};

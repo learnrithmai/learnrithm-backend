@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+. "$(dirname "$0")/_/husky.sh"
 
-echo "No tests defined. Skipping tests."
-exit 0
+
+npm run lint-stages

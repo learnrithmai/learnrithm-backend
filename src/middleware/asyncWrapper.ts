@@ -18,8 +18,8 @@ import { Response, Request, NextFunction } from "express";
  *
  * app.get('/async-route', asyncRoute);
  */
-export const asyncWrapper = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
-    return (req: Request, res: Response, next: NextFunction): Promise<any> => {
+export const asyncWrapper = (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) => {
+    return (req: Request, res: Response, next: NextFunction): Promise<unknown> => {
         const fnReturn = fn(req, res, next);
         return Promise.resolve(fnReturn).catch(next);
     };

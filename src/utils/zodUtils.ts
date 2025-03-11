@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable unicorn/no-useless-undefined */
 
 //?  ***************************** Zod Utils   **********************************  */
 
@@ -344,7 +343,6 @@ export function formatPath(path: Array<string | number>) {
 
     return path
         .map((element, index) => {
-            // eslint-disable-next-line unicorn/prefer-ternary
             if (Number.isInteger(element) && index > 0 && Number.isInteger(path[index - 1])) {
                 // This is an array index, format it as such
                 return `[${element}]`;

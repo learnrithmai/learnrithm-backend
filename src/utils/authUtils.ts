@@ -40,7 +40,7 @@ export const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
         await prisma.token.deleteMany({
             where: { userId: user.id, tokenType: TokenType.email_validation },
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.log(error);
         throw new ApiError(401, "Email verification failed");
     }
@@ -65,7 +65,7 @@ export const isPasswordCompromised = async (password: string): Promise<boolean> 
     const hashes = response.data.split("\r\n");
 
     for (const hash of hashes) {
-        const [hashSuffix, count] = hash.split(":");
+        const [hashSuffix] = hash.split(":");
         if (hashSuffix === suffix) {
             return true;
         }

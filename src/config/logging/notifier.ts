@@ -1,6 +1,6 @@
 import notifier from "node-notifier";
-import { AxiosErrorDetails, CustomError } from "../../types/errors";
-import { Response, Request, NextFunction } from "express";
+import { CustomError } from "../../types/errors";
+import { Request } from "express";
 
 /**
  * Sends a notification for an error that occurred during an HTTP request.

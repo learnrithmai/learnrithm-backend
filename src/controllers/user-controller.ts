@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { hash } from "bcryptjs";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
 import prisma from "@/config/db/prisma";
@@ -6,7 +6,7 @@ import prisma from "@/config/db/prisma";
  * Get a single user by ID.
  */
 export const getUser = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const user = await prisma.user.findUnique({
@@ -28,7 +28,7 @@ export const getUser = asyncWrapper(
  * Get all users with optional pagination and search.
  */
 export const getAllUsers = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     // Default pagination parameters
     const { page = 1, limit = 10, search } = req.query;
     const pageNum = Number(page);
@@ -36,7 +36,7 @@ export const getAllUsers = asyncWrapper(
     const offsetNum = (pageNum - 1) * limitNum;
 
     // Build query filter (search by email or firstName)
-    const query: any = {};
+    const query: { OR?: { email?: { contains: string, mode: "insensitive" }, firstName?: { contains: string, mode: "insensitive" } }[] } = {};
     if (search) {
       const escapedSearch = search
         .toString()
@@ -75,7 +75,7 @@ export const getAllUsers = asyncWrapper(
  * Updates the User record and, if provided, the password in the UserAuth record.
  */
 export const updateUser = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     const { updateType } = req.params;
     //Update By Type
     if (updateType === "UpdateInfo") {

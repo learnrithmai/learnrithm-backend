@@ -26,17 +26,18 @@ import {
 } from "@/validations/authSchema";
 import { TokenType } from "@prisma/client";
 import bcrypt from "bcrypt";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 
 // ────────────────────────────────────────────────────────────────
 // REGISTER USER
 // ────────────────────────────────────────────────────────────────
 
-export const registerUser = asyncWrapper(async (req: Request, res: Response, next: NextFunction) => {
-  const { email, name, password, country, referralCode } = req.body as RegisterUserBody;
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
+  const { email, Name, password, country, referralCode } = req.body as RegisterUserBody;
 
-  if (!email || !password || !name || !country) {
-    return res.status(400).json({ errorMsg: "Email, name, password, and country are required" });
+  if (!email || !password || !Name || !country) {
+    res.status(400).json({ errorMsg: "Email, name, password, and country are required" });
+    return;
   }
 
   const normalizedEmail = typeof email === 'string' ? email.toLowerCase() : '';
@@ -45,7 +46,8 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
     where: { email: normalizedEmail },
   });
   if (existingAuth) {
-    return res.status(409).json({ errorMsg: "User already exists" });
+    res.status(409).json({ errorMsg: "User already exists" });
+    return;
   }
 
   // Hash password
@@ -60,7 +62,8 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
   });
 
   if (!userAuth) {
-    return res.status(500).json({ errorMsg: "User creation failed" });
+    res.status(500).json({ errorMsg: "User creation failed" });
+    return;
   }
 
   // Create user profile in User model (using userAuth.id as unique identifier)
@@ -68,7 +71,7 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
     data: {
       userId: userAuth.id,
       email: normalizedEmail,
-      Name: name,
+      Name,
       lastLogin: new Date(),
       country: country as string,
     },
@@ -79,7 +82,7 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
     data: {
       userId: userAuth.id,
       email: normalizedEmail,
-      Name: name,
+      Name,
       lastLogin: new Date(),
     },
   });
@@ -109,13 +112,13 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
     success: `User ${newUser.email} created successfully!`,
     user: newUser,
   });
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // LOGIN
 // ────────────────────────────────────────────────────────────────
 
-export const login = asyncWrapper(async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   const { identifier, password } = req.body as LoginBody;
   const normalizedIdentifier = identifier.toLowerCase();
 
@@ -124,12 +127,14 @@ export const login = asyncWrapper(async (req: Request, res: Response) => {
     where: { email: normalizedIdentifier },
   });
   if (!userAuth) {
-    return res.status(404).json({ error: "User with that email not found" });
+    res.status(404).json({ error: "User with that email not found" });
+    return;
   }
 
   // Verify password match
   if (!(await isPasswordMatch(password, userAuth.password))) {
-    return res.status(401).json({ error: "Invalid password" });
+    res.status(401).json({ error: "Invalid password" });
+    return;
   }
 
   // Retrieve user profile
@@ -137,7 +142,8 @@ export const login = asyncWrapper(async (req: Request, res: Response) => {
     where: { email: normalizedIdentifier },
   });
   if (!user) {
-    return res.status(404).json({ error: "User profile not found" });
+    res.status(404).json({ error: "User profile not found" });
+    return;
   }
 
   // Generate authentication tokens
@@ -156,17 +162,18 @@ export const login = asyncWrapper(async (req: Request, res: Response) => {
     user,
     accessToken: tokens.access,
   });
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // LOGOUT
 // ────────────────────────────────────────────────────────────────
 
-export const logout = asyncWrapper(async (req: Request, res: Response) => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   const { jwt: refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(204).json({ success: "Refresh token not found in cookies, logout success" });
+    res.status(204).json({ success: "Refresh token not found in cookies, logout success" });
+    return;
   }
 
   const refreshTokenDoc = await prisma.token.findFirst({
@@ -177,82 +184,98 @@ export const logout = asyncWrapper(async (req: Request, res: Response) => {
   });
 
   if (!refreshTokenDoc) {
-    return res.status(404).json({ error: "Refresh token not found" });
+    res.status(404).json({ error: "Refresh token not found" });
+    return;
   }
 
   await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
   res.clearCookie("jwt", getCookieOptions(refreshTokenDoc.tokenExpires));
   res.status(204).send();
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // REFRESH TOKENS
 // ────────────────────────────────────────────────────────────────
 
-export const refreshTokens = asyncWrapper(async (req: Request, res: Response, next: NextFunction) => {
+export const refreshTokens = async (req: Request, res: Response): Promise<void> => {
   log.info("Refreshing token: creating new access token if expired...");
   const { jwt: refreshToken } = req.cookies;
   if (!refreshToken) {
-    return res.status(401).json({ error: "Refresh token not found" });
+    res.status(401).json({ error: "Refresh token not found" });
+    return;
   }
   let refreshTokenDoc;
   try {
     refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH as TokenType);
     const user = await prisma.user.findUnique({ where: { id: refreshTokenDoc.userId } });
     if (!user) {
-      return res.status(404).json({ error: "User not found with that token" });
+      res.status(404).json({ error: "User not found with that token" });
+      return;
     }
     const accessToken = await generateAccessToken(user);
-    return res.status(200).json({ success: "Access token regenerated", accessToken });
-  } catch (error: any) {
-    if (error?.name === "TokenExpiredError") {
+    res.status(200).json({ success: "Access token regenerated", accessToken });
+  } catch (error) {
+    if ((error as Error)?.name === "TokenExpiredError") {
       res.clearCookie("jwt");
       if (refreshTokenDoc) {
         await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
       }
-      return res.status(401).json({ error: "Refresh token expired. Please log in again." });
+      res.status(401).json({ error: "Refresh token expired. Please log in again." });
+      return;
     }
-    return res.status(500).json({ error: "An error occurred while refreshing tokens." });
+    res.status(500).json({ error: "An error occurred while refreshing tokens." });
   }
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // FORGOT PASSWORD
 // ────────────────────────────────────────────────────────────────
 
-export const forgotPassword = asyncWrapper(async (req: Request, res: Response) => {
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body as ForgotPasswordBody;
   const normalizedEmail = email.toLowerCase();
 
   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (!user) {
-    return res.status(404).json({ error: "User with that email not found" });
+    res.status(404).json({ error: "User with that email not found" });
+    return;
   }
 
   // Generate reset token and send email
   const resetPasswordToken = await generateResetPasswordToken(user);
-  await sendResetPasswordEmail(user, resetPasswordToken);
+  const userInfo = await prisma.userInfo.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!userInfo) {
+    res.status(404).json({ error: "User info not found" });
+    return;
+  }
+
+  await sendResetPasswordEmail(userInfo, resetPasswordToken);
   res.status(200).json({ message: "Check your email for further instructions" });
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // RESET PASSWORD
 // ────────────────────────────────────────────────────────────────
 
-export const resetPassword = asyncWrapper(async (req: Request, res: Response) => {
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   const { password: newPassword } = req.body as ResetPasswordBody;
   const { token: resetToken } = req.query as ResetPasswordQuery;
 
   const resetTokenDoc = await verifyToken(resetToken, tokenTypes.RESET_PASSWORD as TokenType);
   if (!resetTokenDoc) {
-    return res.status(404).json({
+    res.status(404).json({
       error: "The password reset token you provided is either invalid or has expired. Please request a new one.",
     });
+    return;
   }
 
   const user = await prisma.user.findUnique({ where: { id: resetTokenDoc.userId } });
   if (!user) {
-    return res.status(404).json({ error: "No user found with that token" });
+    res.status(404).json({ error: "No user found with that token" });
+    return;
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, 8);
@@ -266,24 +289,53 @@ export const resetPassword = asyncWrapper(async (req: Request, res: Response) =>
     where: { userId: user.id, tokenType: tokenTypes.RESET_PASSWORD as TokenType },
   });
 
-  await sendSuccessResetPasswordEmail(user);
+  const userInfo = await prisma.userInfo.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!userInfo) {
+    res.status(404).json({ error: "User info not found" });
+    return;
+  }
+
+  await sendSuccessResetPasswordEmail(userInfo);
   res.status(200).json({ message: "Your password has been changed successfully" });
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // SEND VERIFICATION EMAIL
 // ────────────────────────────────────────────────────────────────
 
-export const sendVerificationEmail = asyncWrapper(async (req: Request, res: Response) => {
-  const user = await prisma.user.findUnique({ where: { email: (req.user as any)?.email } });
-  if (!user) {
-    return res.status(404).json({ error: "User with that email not found" });
+export const sendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  interface UserRequest extends Request {
+    user?: {
+      email: string;
+      role: string;
+      id: string;
+      password: string;
+      createdAt: Date;
+    };
   }
 
-  const verifyEmailToken = await generateVerifyEmailToken(req.user as any);
-  await sendVerificationEmailUtil(req.user as any, verifyEmailToken);
+  const user = await prisma.user.findUnique({ where: { email: (req as UserRequest).user?.email } });
+  if (!user) {
+    res.status(404).json({ error: "User with that email not found" });
+    return;
+  }
+
+  const verifyEmailToken = await generateVerifyEmailToken(req.user as { email: string; role: string; id: string; password: string; createdAt: Date });
+  const userInfo = await prisma.userInfo.findUnique({
+    where: { userId: user.id },
+  });
+
+  if (!userInfo) {
+    res.status(404).json({ error: "User info not found" });
+    return;
+  }
+
+  await sendVerificationEmailUtil(userInfo, verifyEmailToken);
   res.status(200).json({ message: "Check your email for further instructions" });
-});
+};
 
 // ────────────────────────────────────────────────────────────────
 // VERIFY EMAIL

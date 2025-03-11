@@ -1,7 +1,7 @@
 import log from "@/utils/chalkLogger";
 import { byteToMb } from "@/utils";
-import multer, { MulterError, Options } from "multer";
-import { Request, Response, NextFunction } from "express";
+import { MulterError, Options } from "multer";
+import { Response, NextFunction } from "express";
 
 /**
  * Middleware to handle Multer errors.
@@ -15,7 +15,7 @@ import { Request, Response, NextFunction } from "express";
  * app.post('/upload', upload.single('file'), multerErrorHandler(uploadOptions));
  */
 export const multerErrorHandler = (upload: Options) => {
-    return (err: any, req: Request, res: Response, next: NextFunction): void => {
+    return (err: unknown, res: Response, next: NextFunction): void => {
         if (err instanceof MulterError) {
             let message = err.message;
             console.log(err);

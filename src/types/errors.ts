@@ -3,7 +3,7 @@ export interface CustomError extends Error {
     response?: {
         status?: number;
         statusText?: string;
-        data?: any;
+        data?: unknown;
     };
     config?: {
         url?: string;
@@ -16,5 +16,5 @@ export interface AxiosErrorDetails {
     method?: string;
     statusCode?: number;
     statusText?: string;
-    data?: any;
+    data?: unknown;
 }

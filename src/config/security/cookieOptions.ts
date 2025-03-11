@@ -1,5 +1,4 @@
 import { isProd } from "../../config/const";
-import { ENV } from "../../validations/envSchema";
 import { CookieOptions } from "express";
 
 /**
@@ -21,7 +20,7 @@ import { CookieOptions } from "express";
  * // With custom httpOnly and rememberMe
  * const options = getCookieOptions(new Date(Date.now() + 3600000), false, false);
  */
-export const getCookieOptions = (expires?: Date, httpOnly = true, rememberMe = true): CookieOptions => ({
+export const getCookieOptions = (expires?: Date, httpOnly: boolean = true): CookieOptions => ({
     httpOnly,
     secure: isProd,
     sameSite: isProd ? "strict" : "lax", // Corrected the casing

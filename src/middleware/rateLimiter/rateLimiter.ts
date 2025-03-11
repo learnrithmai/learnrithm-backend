@@ -43,7 +43,6 @@ export const rateLimiterMiddleware = async (req: Request, res: Response, next: N
         res.setHeader("X-RateLimit-Reset", new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString());
 
         next();
-        // eslint-disable-next-line unicorn/catch-error-name
     } catch (rateLimiterRes) {
         if (rateLimiterRes instanceof RateLimiterRes) {
             log.warning("RateLimit-Limit Error .....");
