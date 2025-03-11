@@ -8,17 +8,17 @@ import { Attachment } from "nodemailer/lib/mailer";
 
 // @ts-expect-error : test is not defined in process.env
 if (ENV.NODE_ENV !== "test") {
-    try {
-        // await transporter.verify();
-        const formattedDate = format(new Date(), "yyyy-MM-dd HH:mm:ss");
-        logger.info("NODEMAILER", `Connected to email server at ${formattedDate}`);
-    } catch {
-        const formattedDate = format(new Date(), "yyyy-MM-dd HH:mm:ss");
-        logger.warning(
-            "NODEMAILER",
-            `Unable to connect to email server at ${formattedDate}. Make sure you have configured the SMTP options in .env`
-        );
-    }
+  try {
+    // await transporter.verify();
+    const formattedDate = format(new Date(), "yyyy-MM-dd HH:mm:ss");
+    logger.info("NODEMAILER", `Connected to email server at ${formattedDate}`);
+  } catch {
+    const formattedDate = format(new Date(), "yyyy-MM-dd HH:mm:ss");
+    logger.warning(
+      "NODEMAILER",
+      `Unable to connect to email server at ${formattedDate}. Make sure you have configured the SMTP options in .env`,
+    );
+  }
 }
 
 /**
@@ -26,8 +26,10 @@ if (ENV.NODE_ENV !== "test") {
  * @param {SendMailOptions} mailOptions
  * @returns {Promise<void>}
  */
-export const sendEmail = async (mailOptions: SendMailOptions): Promise<void> => {
-    return await transporter.sendMail(mailOptions);
+export const sendEmail = async (
+  mailOptions: SendMailOptions,
+): Promise<void> => {
+  return await transporter.sendMail(mailOptions);
 };
 
 /**
@@ -36,33 +38,40 @@ export const sendEmail = async (mailOptions: SendMailOptions): Promise<void> => 
  * @param {string} token
  * @returns {Promise<void>}
  */
-export const sendResetPasswordEmail = async (user: UserInfo, token: string): Promise<void> => {
-    const subject = "Reset password";
-    const resetPasswordUrl = `${ENV.CLIENT_URL}/reset-password?token=${token}`;
-    const body = `<img src="cid:logo.png" alt="logo"/>
+export const sendResetPasswordEmail = async (
+  user: UserInfo,
+  token: string,
+): Promise<void> => {
+  const subject = "Reset password";
+  const resetPasswordUrl = `${ENV.CLIENT_URL}/reset-password?token=${token}`;
+  const body = `<img src="cid:logo.png" alt="logo"/>
 		<h1>Hey ${user.Name}!</h1>
 		<p>You are receiving this because you (or someone else) have requested the <strong>reset of the password</strong> for your account.</p>
 		<p>Please click on the following link, or paste this into your browser to complete the process:</p>
 		<a href="${resetPasswordUrl}">Reset password</a>
 		<p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`;
-    const attachments: Attachment[] = [
-        {
-            filename: "logo.svg",
-            path: "public/images/Learnrithm.png",
-            cid: "logo.png"
-        }
-    ];
+  const attachments: Attachment[] = [
+    {
+      filename: "logo.svg",
+      path: "public/images/Learnrithm.png",
+      cid: "logo.png",
+    },
+  ];
 
-    const mailOptions: SendMailOptions = {
-        from: ENV.EMAIL_FROM ? `Learnrithm AI <${ENV.EMAIL_FROM}>` : "support@learnrithm.com",
-        to: user.email,
-        subject,
-        html: body,
-        attachments
-    };
-    const mailInfo = await sendEmail(mailOptions);
-    console.log("Message: %s", JSON.stringify(mailInfo));
-    logger.info(`An e-mail has been sent to ${user.email} with further instructions.`);
+  const mailOptions: SendMailOptions = {
+    from: ENV.EMAIL_FROM
+      ? `Learnrithm AI <${ENV.EMAIL_FROM}>`
+      : "support@learnrithm.com",
+    to: user.email,
+    subject,
+    html: body,
+    attachments,
+  };
+  const mailInfo = await sendEmail(mailOptions);
+  console.log("Message: %s", JSON.stringify(mailInfo));
+  logger.info(
+    `An e-mail has been sent to ${user.email} with further instructions.`,
+  );
 };
 
 /**
@@ -70,32 +79,38 @@ export const sendResetPasswordEmail = async (user: UserInfo, token: string): Pro
  * @param {UserInfo} user
  * @returns {Promise<void>}
  */
-export const sendSuccessResetPasswordEmail = async (user: UserInfo): Promise<void> => {
-    const subject = "Password Reset Successfully";
-    const body = `<img src="cid:logo.png" alt="logo"/>
+export const sendSuccessResetPasswordEmail = async (
+  user: UserInfo,
+): Promise<void> => {
+  const subject = "Password Reset Successfully";
+  const body = `<img src="cid:logo.png" alt="logo"/>
         <h1>Hey ${user.Name}!</h1>
         <p>This is a confirmation that the password for your account ${user.email} has been successfully reset.</p>
         <p>If you did not request this, please contact us immediately.</p>`;
 
-    const attachments: Attachment[] = [
-        {
-            filename: "logo.svg",
-            path: "public/images/Learnrithm.png",
-            cid: "logo.png"
-        }
-    ];
+  const attachments: Attachment[] = [
+    {
+      filename: "logo.svg",
+      path: "public/images/Learnrithm.png",
+      cid: "logo.png",
+    },
+  ];
 
-    const mailOptions: SendMailOptions = {
-        from: ENV.EMAIL_FROM ? `Learnrithm AI <${ENV.EMAIL_FROM}>` : "support@learnrithm.com",
-        to: user.email,
-        subject,
-        html: body,
-        attachments
-    };
+  const mailOptions: SendMailOptions = {
+    from: ENV.EMAIL_FROM
+      ? `Learnrithm AI <${ENV.EMAIL_FROM}>`
+      : "support@learnrithm.com",
+    to: user.email,
+    subject,
+    html: body,
+    attachments,
+  };
 
-    const mailInfo = await sendEmail(mailOptions);
-    console.log("Message: %s", JSON.stringify(mailInfo));
-    logger.info(`An e-mail has been sent to ${user.email} with further instructions.`);
+  const mailInfo = await sendEmail(mailOptions);
+  console.log("Message: %s", JSON.stringify(mailInfo));
+  logger.info(
+    `An e-mail has been sent to ${user.email} with further instructions.`,
+  );
 };
 
 /**
@@ -104,33 +119,40 @@ export const sendSuccessResetPasswordEmail = async (user: UserInfo): Promise<voi
  * @param {string} token
  * @returns {Promise<void>}
  */
-export const sendVerificationEmail = async (user: UserInfo, token: string): Promise<void> => {
-    const subject = "Email Verification";
-    const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${token}`;
-    const body = `<img src="cid:logo.png" alt="logo"/>
+export const sendVerificationEmail = async (
+  user: UserInfo,
+  token: string,
+): Promise<void> => {
+  const subject = "Email Verification";
+  const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${token}`;
+  const body = `<img src="cid:logo.png" alt="logo"/>
     <h1>Hello ${user.Name}!</h1>
     <p>Thank you for registering with us. Please verify your email address by clicking the link below:</p>
     <p><a href="${verificationUrl}">Verify Email</a></p>
     <p>If you did not create an account, please ignore this email or contact support.</p>
     <p>Best regards,<br/>Learnrithm AI Team</p>`;
 
-    const attachments: Attachment[] = [
-        {
-            filename: "logo.svg",
-            path: "public/email/logo.svg",
-            cid: "logo.png"
-        }
-    ];
+  const attachments: Attachment[] = [
+    {
+      filename: "logo.svg",
+      path: "public/email/logo.svg",
+      cid: "logo.png",
+    },
+  ];
 
-    const mailOptions: SendMailOptions = {
-        from: ENV.EMAIL_FROM ? `Learnrithm AI <${ENV.EMAIL_FROM}>` : "support@learnrithm.com",
-        to: user.email,
-        subject,
-        html: body,
-        attachments
-    };
+  const mailOptions: SendMailOptions = {
+    from: ENV.EMAIL_FROM
+      ? `Learnrithm AI <${ENV.EMAIL_FROM}>`
+      : "support@learnrithm.com",
+    to: user.email,
+    subject,
+    html: body,
+    attachments,
+  };
 
-    const mailInfo = await sendEmail(mailOptions);
-    console.log("Message: %s", JSON.stringify(mailInfo));
-    logger.info(`An e-mail has been sent to ${user.email} with further instructions.`);
+  const mailInfo = await sendEmail(mailOptions);
+  console.log("Message: %s", JSON.stringify(mailInfo));
+  logger.info(
+    `An e-mail has been sent to ${user.email} with further instructions.`,
+  );
 };

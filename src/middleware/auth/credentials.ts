@@ -15,10 +15,14 @@ import { Request, Response, NextFunction } from "express";
  * const app = express();
  * app.use(credentials);
  */
-export const credentials = (req: Request, res: Response, next: NextFunction): void => {
-    const origin = req.headers.origin as string;
-    if (ENV.ALLOWED_ORIGINS.includes(origin)) {
-        res.header("Access-Control-Allow-Credentials", "true");
-    }
-    next();
+export const credentials = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const origin = req.headers.origin as string;
+  if (ENV.ALLOWED_ORIGINS.includes(origin)) {
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+  next();
 };

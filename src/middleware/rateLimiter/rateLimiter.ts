@@ -13,9 +13,9 @@ import { RateLimiterPrisma, RateLimiterRes } from "rate-limiter-flexible";
 */
 
 const rateLimiter = new RateLimiterPrisma({
-    storeClient: prisma,
-    points: 10, // 40 requests
-    duration: 60, // per 60 second by IP
+  storeClient: prisma,
+  points: 10, // 40 requests
+  duration: 60, // per 60 second by IP
 });
 
 /**
@@ -32,33 +32,45 @@ const rateLimiter = new RateLimiterPrisma({
  * const app = express();
  * app.use(rateLimiterMiddleware);
  */
-export const rateLimiterMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const rateLimiterRes: RateLimiterRes = await rateLimiter.consume(req.ip || ""); // Consume 1 point for each request
-        log.debug("RateLimit-Limit Response .....");
-        console.log(rateLimiterRes);
-        res.setHeader("Retry-After", rateLimiterRes.msBeforeNext / 1000);
-        res.setHeader("X-RateLimit-Limit", rateLimiter.points);
-        res.setHeader("X-RateLimit-Remaining", rateLimiterRes.remainingPoints);
-        res.setHeader("X-RateLimit-Reset", new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString());
+export const rateLimiterMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const rateLimiterRes: RateLimiterRes = await rateLimiter.consume(
+      req.ip || "",
+    ); // Consume 1 point for each request
+    log.debug("RateLimit-Limit Response .....");
+    console.log(rateLimiterRes);
+    res.setHeader("Retry-After", rateLimiterRes.msBeforeNext / 1000);
+    res.setHeader("X-RateLimit-Limit", rateLimiter.points);
+    res.setHeader("X-RateLimit-Remaining", rateLimiterRes.remainingPoints);
+    res.setHeader(
+      "X-RateLimit-Reset",
+      new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString(),
+    );
 
-        next();
-    } catch (rateLimiterRes) {
-        if (rateLimiterRes instanceof RateLimiterRes) {
-            log.warning("RateLimit-Limit Error .....");
-            console.log(rateLimiterRes);
+    next();
+  } catch (rateLimiterRes) {
+    if (rateLimiterRes instanceof RateLimiterRes) {
+      log.warning("RateLimit-Limit Error .....");
+      console.log(rateLimiterRes);
 
-            res.setHeader("Retry-After", rateLimiterRes.msBeforeNext / 1000);
-            res.setHeader("X-RateLimit-Limit", String(rateLimiter?.points));
-            res.setHeader("X-RateLimit-Remaining", rateLimiterRes.remainingPoints);
-            res.setHeader("X-RateLimit-Reset", new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString());
+      res.setHeader("Retry-After", rateLimiterRes.msBeforeNext / 1000);
+      res.setHeader("X-RateLimit-Limit", String(rateLimiter?.points));
+      res.setHeader("X-RateLimit-Remaining", rateLimiterRes.remainingPoints);
+      res.setHeader(
+        "X-RateLimit-Reset",
+        new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString(),
+      );
 
-            log.error("rate-limiter-flexible : ", "Too Many Requests");
-            res.status(429).send("Too Many Requests");
-        } else {
-            // Handle other types of errors
-            console.error(rateLimiterRes);
-            res.status(500).send("Internal Server Error");
-        }
+      log.error("rate-limiter-flexible : ", "Too Many Requests");
+      res.status(429).send("Too Many Requests");
+    } else {
+      // Handle other types of errors
+      console.error(rateLimiterRes);
+      res.status(500).send("Internal Server Error");
     }
+  }
 };

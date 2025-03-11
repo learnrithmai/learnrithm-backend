@@ -13,11 +13,11 @@ import { Request } from "express";
  * errorNotification(error, request);
  */
 export function errorNotification(err: CustomError, req: Request) {
-    const title = "Error in " + req.method + " " + req.url + " " + err.status;
+  const title = "Error in " + req.method + " " + req.url + " " + err.status;
 
-    notifier.notify({
-        title: title,
-        message: err.message.toString(),
-        sound: true, // Only Notification Center or Windows Toasters
-    });
+  notifier.notify({
+    title: title,
+    message: err.message.toString(),
+    sound: true, // Only Notification Center or Windows Toasters
+  });
 }

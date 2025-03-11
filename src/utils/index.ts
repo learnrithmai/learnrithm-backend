@@ -10,7 +10,7 @@ import safeRegex from "safe-regex";
  * byteToMb(1048576);
  */
 export function byteToMb(byte: number): number {
-    return Number((byte / 1024 / 1024).toFixed(2));
+  return Number((byte / 1024 / 1024).toFixed(2));
 }
 
 /**
@@ -22,7 +22,7 @@ export function byteToMb(byte: number): number {
  * mbToByte(1);
  */
 export function mbToByte(mb: number): number {
-    return mb * 1024 * 1024;
+  return mb * 1024 * 1024;
 }
 
 /**
@@ -42,26 +42,26 @@ export function mbToByte(mb: number): number {
  * // returns 604800000
  */
 export function convertToMilliseconds(timeString: string): number {
-    const units = timeString.slice(-1);
-    const value = Number.parseInt(timeString.slice(0, -1));
+  const units = timeString.slice(-1);
+  const value = Number.parseInt(timeString.slice(0, -1));
 
-    switch (units) {
-        case "s": {
-            return value * 1000;
-        }
-        case "m": {
-            return value * 60 * 1000;
-        }
-        case "h": {
-            return value * 60 * 60 * 1000;
-        }
-        case "d": {
-            return value * 24 * 60 * 60 * 1000;
-        }
-        default: {
-            throw new Error(`Unknown time unit: ${units}`);
-        }
+  switch (units) {
+    case "s": {
+      return value * 1000;
     }
+    case "m": {
+      return value * 60 * 1000;
+    }
+    case "h": {
+      return value * 60 * 60 * 1000;
+    }
+    case "d": {
+      return value * 24 * 60 * 60 * 1000;
+    }
+    default: {
+      throw new Error(`Unknown time unit: ${units}`);
+    }
+  }
 }
 
 /**
@@ -72,7 +72,7 @@ export function convertToMilliseconds(timeString: string): number {
  * uuid();
  */
 export function uuid(): crypto.UUID {
-    return crypto.randomUUID();
+  return crypto.randomUUID();
 }
 
 /**
@@ -80,7 +80,7 @@ export function uuid(): crypto.UUID {
  * @returns {string} The generated reset token.
  */
 export function generateHashedToken(size: number): string {
-    return crypto.randomBytes(size).toString("hex");
+  return crypto.randomBytes(size).toString("hex");
 }
 
 /**
@@ -92,8 +92,8 @@ export function generateHashedToken(size: number): string {
  * signChecker("10%");
  */
 export function signChecker(percent: string): boolean {
-    const numericPercent = Number.parseFloat(percent); // Convert string percentage to a number
-    return numericPercent > 0;
+  const numericPercent = Number.parseFloat(percent); // Convert string percentage to a number
+  return numericPercent > 0;
 }
 
 /**
@@ -114,10 +114,13 @@ export function signChecker(percent: string): boolean {
  * 	throw createError(500, "One or more regular expressions are not safe.");
  * }
  */
-export function isRegexSave(...regexes: RegExp[]): { allSafe: boolean; unsafeRegexes: RegExp[] } {
-    const unsafeRegexes = regexes.filter((regex) => !safeRegex(regex));
-    return {
-        allSafe: unsafeRegexes.length === 0,
-        unsafeRegexes: unsafeRegexes,
-    };
+export function isRegexSave(...regexes: RegExp[]): {
+  allSafe: boolean;
+  unsafeRegexes: RegExp[];
+} {
+  const unsafeRegexes = regexes.filter((regex) => !safeRegex(regex));
+  return {
+    allSafe: unsafeRegexes.length === 0,
+    unsafeRegexes: unsafeRegexes,
+  };
 }
