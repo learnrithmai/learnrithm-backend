@@ -137,7 +137,29 @@ model Transaction {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   refunded          Boolean
+  freeTrial         Boolean
 }
+
+
+//////////////////////////
+//   Payment models     //
+//////////////////////////
+
+model Product {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  name              String   @unique
+  nameId            String
+  variant           String
+  variantId         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  freeTrailAmount   Int
+}
+
+
+
+
+
 
 //////////////////////////
 //   Quiz Game Models   //
