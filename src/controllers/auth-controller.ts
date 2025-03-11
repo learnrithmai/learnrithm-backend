@@ -24,6 +24,7 @@ import {
   ResetPasswordQuery,
   VerifyEmailQuery,
 } from "@/validations/authSchema";
+import { TokenType } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { NextFunction, Request, Response } from "express";
 
@@ -40,7 +41,7 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
 
   const normalizedEmail = typeof email === 'string' ? email.toLowerCase() : '';
   // Check if credentials already exist
-  const existingAuth = await prisma.userAuth.findUnique({
+  const existingAuth = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
   if (existingAuth) {
@@ -50,8 +51,8 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
   // Hash password
   const hashedPassword = await bcrypt.hash(password as string, 10);
 
-  // Create credentials in UserAuth model
-  const userAuth = await prisma.userAuth.create({
+  // Create credentials in user model
+  const userAuth = await prisma.user.create({
     data: {
       email: normalizedEmail,
       password: hashedPassword,
@@ -63,13 +64,13 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
   }
 
   // Create user profile in User model (using userAuth.id as unique identifier)
-  const newUser = await prisma.user.create({
+  const newUser = await prisma.userDetails.create({
     data: {
       userId: userAuth.id,
       email: normalizedEmail,
-      firstName: name,
+      Name: name,
       lastLogin: new Date(),
-      plan: "trial_monthly", // default plan
+      country: country as string,
     },
   });
 
@@ -78,25 +79,17 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
     data: {
       userId: userAuth.id,
       email: normalizedEmail,
-      firstName: name,
+      Name: name,
       lastLogin: new Date(),
-      country,
-      SubscriptionPlan: "trial_monthly",
     },
   });
 
-  // If a referral code is provided, create a referral record.
   // (Assumes that models for referralCode and referrer exist.)
   if (referralCode) {
     const referrer = await prisma.referralCode.findUnique({
-      where: { referralCode },
+      where: { code: referralCode as string },
     });
     if (referrer) {
-      await prisma.referrer.update({
-        where: { id: referrer.id },
-        data: { referredAmount: referrer.referredAmount + 1 },
-      });
-
       await prisma.userReferredBy.create({
         data: {
           userId: userAuth.id,
@@ -104,8 +97,8 @@ export const registerUser = asyncWrapper(async (req: Request, res: Response, nex
           email: normalizedEmail,
           referredUserEmail: referrer.email,
           date: new Date(),
-          refCodeUsed: referralCode,
-          referringType: "sign", // ensure this value exists in your ReferringType enum
+          refCodeUsed: referralCode as string,
+          referringType: "sign",
           referringSource: "signup",
         },
       });
@@ -127,7 +120,7 @@ export const login = asyncWrapper(async (req: Request, res: Response) => {
   const normalizedIdentifier = identifier.toLowerCase();
 
   // Find user credentials by email
-  const userAuth = await prisma.userAuth.findUnique({
+  const userAuth = await prisma.user.findUnique({
     where: { email: normalizedIdentifier },
   });
   if (!userAuth) {
@@ -153,8 +146,13 @@ export const login = asyncWrapper(async (req: Request, res: Response) => {
   // Set secure refresh token cookie
   res.cookie("jwt", tokens.refresh.token, getCookieOptions(tokens.refresh.expires));
 
+  // get the user name from the user profile
+  const userInfo = await prisma.userInfo.findUnique({
+    where: { userId: user.id },
+  });
+
   res.send({
-    success: `Login successful: ${user.firstName}!`,
+    success: `Login successful: ${userInfo?.Name}!`,
     user,
     accessToken: tokens.access,
   });
@@ -174,8 +172,7 @@ export const logout = asyncWrapper(async (req: Request, res: Response) => {
   const refreshTokenDoc = await prisma.token.findFirst({
     where: {
       token: refreshToken,
-      tokenType: tokenTypes.REFRESH, // ensure this token type exists
-      // Optionally: add additional filters (e.g., blacklisted: false)
+      tokenType: tokenTypes.REFRESH as TokenType,
     },
   });
 
@@ -200,7 +197,7 @@ export const refreshTokens = asyncWrapper(async (req: Request, res: Response, ne
   }
   let refreshTokenDoc;
   try {
-    refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH);
+    refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH as TokenType);
     const user = await prisma.user.findUnique({ where: { id: refreshTokenDoc.userId } });
     if (!user) {
       return res.status(404).json({ error: "User not found with that token" });
@@ -246,7 +243,7 @@ export const resetPassword = asyncWrapper(async (req: Request, res: Response) =>
   const { password: newPassword } = req.body as ResetPasswordBody;
   const { token: resetToken } = req.query as ResetPasswordQuery;
 
-  const resetTokenDoc = await verifyToken(resetToken, tokenTypes.RESET_PASSWORD);
+  const resetTokenDoc = await verifyToken(resetToken, tokenTypes.RESET_PASSWORD as TokenType);
   if (!resetTokenDoc) {
     return res.status(404).json({
       error: "The password reset token you provided is either invalid or has expired. Please request a new one.",
@@ -261,12 +258,12 @@ export const resetPassword = asyncWrapper(async (req: Request, res: Response) =>
   const hashedPassword = await bcrypt.hash(newPassword, 8);
 
   // Update password in UserAuth
-  await prisma.userAuth.update({
-    where: { id: user.userId },
+  await prisma.user.update({
+    where: { id: user.id },
     data: { password: hashedPassword },
   });
   await prisma.token.deleteMany({
-    where: { userId: user.userId, tokenType: tokenTypes.RESET_PASSWORD },
+    where: { userId: user.id, tokenType: tokenTypes.RESET_PASSWORD as TokenType },
   });
 
   await sendSuccessResetPasswordEmail(user);

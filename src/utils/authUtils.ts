@@ -1,10 +1,9 @@
 import prisma from "@/config/db/prisma";
 import ApiError from "@/utils/apiError";
-import { generateAuthTokens, verifyToken } from "@/utils/tokenUtils";
+import { verifyToken } from "@/utils/tokenUtils";
 import { TokenType } from "@prisma/client";
 import axios from "axios";
 import bcrypt from "bcrypt";
-import { Response } from "express";
 import { createHash } from "node:crypto";
 import sha1 from "sha1";
 
@@ -25,17 +24,21 @@ export const isPasswordMatch = async (plainPassword: string, hashedPassword: str
  */
 export const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
     try {
-        const verifyEmailTokenDoc = await verifyToken(verifyEmailToken, TokenType.VERIFY_EMAIL);
+        const verifyEmailTokenDoc = await verifyToken(verifyEmailToken, TokenType.email_validation);
         const user = await prisma.user.findUnique({ where: { id: verifyEmailTokenDoc.userId } });
         if (!user) {
             throw new ApiError(404, "No users found");
         }
-        await prisma.user.update({
+        await prisma.userInfo.update({
             where: { id: user.id },
-            data: { isEmailVerified: true },
+            data: { isVerified: true },
+        });
+        await prisma.userDetails.update({
+            where: { id: user.id },
+            data: { isVerified: true },
         });
         await prisma.token.deleteMany({
-            where: { userId: user.id, type: TokenType.VERIFY_EMAIL },
+            where: { userId: user.id, tokenType: TokenType.email_validation },
         });
     } catch (error: any) {
         console.log(error);

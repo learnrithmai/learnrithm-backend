@@ -80,7 +80,7 @@ export const updateUser = asyncWrapper(
     //Update By Type
     if (updateType === "UpdateInfo") {
 
-      const { name, lastLogin, imgThumbnail, plan, id, ExpirationSubscription } = req.body;
+      const { name, lastLogin, imgThumbnail, plan, id, ExpirationSubscription, birthDate, phoneNumber, institution, linkedin, instagram, facebook, x } = req.body;
 
       // Check if the user ID is provided
       if (!id) {
@@ -105,30 +105,53 @@ export const updateUser = asyncWrapper(
         return res.status(404).json({ errorMsg: "User not found" });
       }
 
-      // Update the User record
-      const updatedUserInfo = await prisma.user.update({
-        where: { id },
-        data: {
-          name,
-          lastLogin,
-          imgThumbnail,
-          plan,
-        },
-      });
+      if (plan || imgThumbnail || name) {
+        // Update the User record
+        await prisma.userInfo.update({
+          where: { id },
+          data: {
+            Name: name,
+            lastLogin,
+            imgThumbnail,
+            plan,
+          },
+        });
 
-      await prisma.UserDetails.update({
-        where: { id },
-        data: {
-          name,
-          lastLogin,
-          imgThumbnail,
-          plan,
-          ExpirationSubscription: ExpirationSubscription,
-        },
-      });
+        await prisma.userDetails.update({
+          where: { id },
+          data: {
+            Name: name,
+            lastLogin,
+            imgThumbnail,
+            plan,
+            ExpirationSubscription: ExpirationSubscription,
+            phoneNumber,
+            birthDate,
+            institution,
+            linkedin,
+            instagram,
+            facebook,
+            x,
+          },
+        });
+      } else {
+        await prisma.userDetails.update({
+          where: { id },
+          data: {
+            ExpirationSubscription: ExpirationSubscription,
+            phoneNumber,
+            birthDate,
+            institution,
+            linkedin,
+            instagram,
+            facebook,
+            x,
+          },
+        });
+      }
 
       res.status(200).json({
-        success: `User ${updatedUserInfo.email} updated successfully`
+        success: `User ${user.email} updated successfully`
       });
 
     } else if (updateType === "UpdatePassword") {

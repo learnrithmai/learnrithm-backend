@@ -1,6 +1,4 @@
-import { tokenTypes } from "@/config/const";
 import prisma from "@/config/db/prisma";
-import ApiError from "@/utils/apiError";
 import { ENV } from "@/validations/envSchema";
 import { Token, TokenType, User } from "@prisma/client";
 import { addDays, addMinutes, getUnixTime } from "date-fns";
@@ -40,14 +38,14 @@ export const generateToken = (
         payload.data = {
             id: data.id.toString(),
             email: data.email,
-            role: data.role,
         };
     } else {
         throw new TypeError("Invalid data type for token generation");
     }
 
-    const options = expiresIn ? { expiresIn } : {};
+    const options: jwt.SignOptions = expiresIn ? { expiresIn: expiresIn as jwt.SignOptions["expiresIn"] } : {};
     return jwt.sign(payload, secret, options);
+
 };
 
 /**
@@ -56,7 +54,6 @@ export const generateToken = (
  * @param {string} userId
  * @param {Date} expires
  * @param {TokenType} type
- * @param {boolean} [blacklisted]
  * @returns {Promise<Token>}
  */
 export const saveToken = async (
@@ -64,15 +61,16 @@ export const saveToken = async (
     userId: string,
     expires: Date,
     type: TokenType,
-    blacklisted: boolean = false
+    email: string,
 ): Promise<Token> => {
+    const normalizedEmail = email.toLowerCase();
     return await prisma.token.create({
         data: {
             token,
+            email: normalizedEmail,
             userId,
-            expires,
-            type,
-            blacklisted,
+            tokenExpires: expires,
+            tokenType: type,
         },
     });
 };
@@ -103,9 +101,8 @@ export const verifyToken = async (token: string, type: TokenType): Promise<Token
     const tokenDoc = await prisma.token.findFirst({
         where: {
             token,
-            type,
+            tokenType: type,
             userId: payload.sub,
-            blacklisted: false,
         },
     });
     if (!tokenDoc) {
@@ -126,11 +123,11 @@ export const generateAuthTokens = async (
     refresh: { token: string; expires: Date };
 }> => {
     const accessTokenExpires = addMinutes(new Date(), ENV.JWT_ACCESS_EXPIRATION_MINUTES);
-    const accessToken = generateToken(user.id, accessTokenExpires, TokenType.ACCESS);
+    const accessToken = generateToken(user.id, accessTokenExpires, TokenType.access);
 
     const refreshTokenExpires = addDays(new Date(), ENV.JWT_REFRESH_EXPIRATION_DAYS);
-    const refreshToken = generateToken(user.id, refreshTokenExpires, TokenType.REFRESH);
-    await saveToken(refreshToken, user.id, refreshTokenExpires, TokenType.REFRESH);
+    const refreshToken = generateToken(user.id, refreshTokenExpires, TokenType.refresh);
+    await saveToken(refreshToken, user.id, refreshTokenExpires, TokenType.refresh, user.email);
 
     return {
         access: {
@@ -147,11 +144,11 @@ export const generateAuthTokens = async (
 /**
  * Generate auth tokens
  * @param {User} user
- * @returns {Promise<{ access: { token: string, expires: Date }}>}
+ * @returns {Promise<{ token: string, expires: Date }>}
  */
-export const generateAccessToken = async (user: User) => {
+export const generateAccessToken = async (user: User): Promise<{ token: string; expires: Date; }> => {
     const accessTokenExpires = addMinutes(new Date(), ENV.JWT_ACCESS_EXPIRATION_MINUTES);
-    const accessToken = generateToken(user.id, accessTokenExpires, TokenType.ACCESS);
+    const accessToken = generateToken(user.id, accessTokenExpires, TokenType.access);
     return {
         token: accessToken,
         expires: accessTokenExpires,
@@ -168,15 +165,15 @@ export const generateResetPasswordToken = async (user: User): Promise<string> =>
     await prisma.token.deleteMany({
         where: {
             userId: user.id,
-            type: TokenType.RESET_PASSWORD,
+            tokenType: TokenType.password_reset,
         },
     });
 
     //  generate a new reset password token
     const expires = addMinutes(new Date(), ENV.JWT_RESET_PASSWORD_EXPIRATION_MINUTES);
-    const resetPasswordToken = generateToken(user.id, expires, TokenType.RESET_PASSWORD);
+    const resetPasswordToken = generateToken(user.id, expires, TokenType.password_reset);
 
-    await saveToken(resetPasswordToken, user.id, expires, TokenType.RESET_PASSWORD);
+    await saveToken(resetPasswordToken, user.id, expires, TokenType.password_reset, user.email);
 
     return resetPasswordToken;
 };
@@ -191,13 +188,13 @@ export const generateVerifyEmailToken = async (user: User): Promise<string> => {
     await prisma.token.deleteMany({
         where: {
             userId: user.id,
-            type: TokenType.VERIFY_EMAIL,
+            tokenType: TokenType.email_validation,
         },
     });
     const expires = addMinutes(new Date(), ENV.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES);
-    const verifyEmailToken = generateToken(user.id, expires, TokenType.VERIFY_EMAIL);
+    const verifyEmailToken = generateToken(user.id, expires, TokenType.email_validation);
 
-    await saveToken(verifyEmailToken, user.id, expires, TokenType.VERIFY_EMAIL);
+    await saveToken(verifyEmailToken, user.id, expires, TokenType.email_validation, user.email);
 
     return verifyEmailToken;
 };

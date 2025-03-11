@@ -1,7 +1,7 @@
-// import { transporter, transporterMailgun } from "@/config/email/nodemailConfig";
+import { transporter } from "@/config/email/nodemailConfig";
 import logger from "@/utils/chalkLogger";
 import { ENV } from "@/validations/envSchema";
-import { User } from "@prisma/client";
+import { User, UserInfo } from "@prisma/client";
 import { format } from "date-fns";
 import { SendMailOptions } from "nodemailer";
 import { Attachment } from "nodemailer/lib/mailer";
@@ -28,16 +28,7 @@ if (ENV.NODE_ENV !== "test") {
  * @returns {Promise<void>}
  */
 export const sendEmail = async (mailOptions: SendMailOptions): Promise<void> => {
-    // return await transporter.sendMail(mailOptions);
-};
-
-/**
- * Send an email using Mailgun transporter
- * @param {SendMailOptions} mailOptions
- * @returns {Promise<void>}
- */
-export const sendEmailMailgun = async (mailOptions: SendMailOptions): Promise<void> => {
-    // return await transporterMailgun.sendMail(mailOptions);
+    return await transporter.sendMail(mailOptions);
 };
 
 /**
@@ -46,11 +37,11 @@ export const sendEmailMailgun = async (mailOptions: SendMailOptions): Promise<vo
  * @param {string} token
  * @returns {Promise<void>}
  */
-export const sendResetPasswordEmail = async (user: User, token: string): Promise<void> => {
+export const sendResetPasswordEmail = async (user: UserInfo, token: string): Promise<void> => {
     const subject = "Reset password";
     const resetPasswordUrl = `${ENV.CLIENT_URL}/reset-password?token=${token}`;
     const body = `<img src="cid:logo.png" alt="logo"/>
-		<h1>Hey ${user.firstName + " " + user.lastName} !</h1>
+		<h1>Hey ${user.Name} !</h1>
 		<p>You are receiving this because you (or someone else) have requested the <strong>reset of the password</strong> for your account.</p>
 		<p>Please click on the following link, or paste this into your browser to complete the process:</p>
 		<a href="${resetPasswordUrl}">reset password</a>
@@ -58,13 +49,13 @@ export const sendResetPasswordEmail = async (user: User, token: string): Promise
     const attachments: Attachment[] = [
         {
             filename: "logo.svg",
-            path: "public/email/logo.svg",
+            path: "public/images/Learnrithm.png",
             cid: "logo.png",
         },
     ];
 
     const mailOptions: SendMailOptions = {
-        from: `Mi9raa <${ENV.EMAIL_FROM}>` || "support@mi9raa.com",
+        from: `Learnrithm AI <${ENV.EMAIL_FROM}>` || "support@learnrithm.com",
         to: user.email,
         subject,
         html: body,
@@ -80,23 +71,23 @@ export const sendResetPasswordEmail = async (user: User, token: string): Promise
  * @param {User} user
  * @returns {Promise<void>}
  */
-export const sendSuccessResetPasswordEmail = async (user: User): Promise<void> => {
+export const sendSuccessResetPasswordEmail = async (user: UserInfo): Promise<void> => {
     const subject = "Password Reset Successfully";
     const body = `<img src="cid:logo.png" alt="logo"/>
-        <h1>Hey ${user.firstName + " " + user.lastName} !</h1>
+        <h1>Hey ${user.Name} !</h1>
         <p>This is a confirmation that the password for your account ${user.email} has been successfully reset.</p>
         <p>If you did not request this, please contact us immediately.</p>`;
 
     const attachments: Attachment[] = [
         {
             filename: "logo.svg",
-            path: "public/email/logo.svg",
+            path: "public/images/Learnrithm.png",
             cid: "logo.png",
         },
     ];
 
     const mailOptions: SendMailOptions = {
-        from: `Mi9raa <${ENV.EMAIL_FROM}>` || "support@mi9raa.com",
+        from: `Learnrithm AI <${ENV.EMAIL_FROM}>` || "support@learnrithm.com",
         to: user.email,
         subject,
         html: body,
@@ -114,11 +105,11 @@ export const sendSuccessResetPasswordEmail = async (user: User): Promise<void> =
  * @param {string} token
  * @returns {Promise<void>}
  */
-export const sendVerificationEmail = async (user: User, token: string): Promise<void> => {
+export const sendVerificationEmail = async (user: UserInfo, token: string): Promise<void> => {
     const subject = "Email Verification";
     const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${token}`;
     const body = `<img src="cid:logo.png" alt="logo"/>
-    <h1>Hello ${user.firstName} ${user.lastName}!</h1>
+    <h1>Hello ${user.Name}!</h1>
     <p>Thank you for registering with us. Please verify your email address by clicking the link below:</p>
     <p><a href="${verificationUrl}">Verify Email</a></p>
     <p>If you did not create an account, please ignore this email or contact support.</p>

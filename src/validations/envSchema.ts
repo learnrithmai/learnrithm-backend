@@ -68,6 +68,13 @@ export const envSchema = z.object({
     JWT_REFRESH_EXPIRATION_DAYS: z.preprocess((x) => x || undefined, numberSchema.min(1).default(30)),
     JWT_RESET_PASSWORD_EXPIRATION_MINUTES: z.preprocess((x) => x || undefined, numberSchema.min(1).default(10)),
     JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: z.preprocess((x) => x || undefined, numberSchema.min(1).default(10)),
+    
+    //? -------- SMTP Config ---------
+    ZOHO_SMTP_HOST: stringNonEmpty().default("smtp.zoho.com"),
+    ZOHO_SMTP_PORT: z.preprocess((x) => x || undefined, numberSchema.min(1).max(65_536).default(587)),
+    ZOHO_SMTP_USERNAME: stringNonEmpty().email(),
+    ZOHO_SMTP_PASSWORD: stringNonEmpty(),
+
 });
 
 //*  see : https://catalins.tech/validate-environment-variables-with-zod/
@@ -76,7 +83,7 @@ export const envSchema = z.object({
 type Env = z.infer<typeof envSchema>;
 declare global {
     namespace NodeJS {
-        interface ProcessEnv extends Env {}
+        interface ProcessEnv extends Env { }
     }
 }
 
