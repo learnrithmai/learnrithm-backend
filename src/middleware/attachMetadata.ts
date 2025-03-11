@@ -1,13 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 
 declare module "express-serve-static-core" {
-    interface Request {
-        metadata?: {
-            time: number;
-            ip: string | undefined;
-            userAgent: string | undefined;
-        };
-    }
+  interface Request {
+    metadata?: {
+      time: number;
+      ip: string | undefined;
+      userAgent: string | undefined;
+    };
+  }
 }
 
 /**
@@ -32,12 +32,16 @@ declare module "express-serve-static-core" {
  *     console.log('User Agent:', req.metadata.userAgent); // Logs the user agent
  * });
  */
-export const attachMetadata = (req: Request, res: Response, next: NextFunction) => {
-    req.metadata = {
-        time: Date.now(),
-        ip: req.ip,
-        userAgent: req.headers["user-agent"],
-    };
+export const attachMetadata = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  req.metadata = {
+    time: Date.now(),
+    ip: req.ip,
+    userAgent: req.headers["user-agent"],
+  };
 
-    next();
+  next();
 };

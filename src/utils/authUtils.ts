@@ -13,8 +13,11 @@ import sha1 from "sha1";
  * @param {string} hashedPassword
  * @returns {Promise<boolean>}
  */
-export const isPasswordMatch = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
-    return bcrypt.compare(plainPassword, hashedPassword);
+export const isPasswordMatch = async (
+  plainPassword: string,
+  hashedPassword: string,
+): Promise<boolean> => {
+  return bcrypt.compare(plainPassword, hashedPassword);
 };
 
 /**
@@ -23,27 +26,32 @@ export const isPasswordMatch = async (plainPassword: string, hashedPassword: str
  * @returns {Promise<void>}
  */
 export const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
-    try {
-        const verifyEmailTokenDoc = await verifyToken(verifyEmailToken, TokenType.email_validation);
-        const user = await prisma.user.findUnique({ where: { id: verifyEmailTokenDoc.userId } });
-        if (!user) {
-            throw new ApiError(404, "No users found");
-        }
-        await prisma.userInfo.update({
-            where: { id: user.id },
-            data: { isVerified: true },
-        });
-        await prisma.userDetails.update({
-            where: { id: user.id },
-            data: { isVerified: true },
-        });
-        await prisma.token.deleteMany({
-            where: { userId: user.id, tokenType: TokenType.email_validation },
-        });
-    } catch (error: any) {
-        console.log(error);
-        throw new ApiError(401, "Email verification failed");
+  try {
+    const verifyEmailTokenDoc = await verifyToken(
+      verifyEmailToken,
+      TokenType.email_validation,
+    );
+    const user = await prisma.user.findUnique({
+      where: { id: verifyEmailTokenDoc.userId },
+    });
+    if (!user) {
+      throw new ApiError(404, "No users found");
     }
+    await prisma.userInfo.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
+    await prisma.userDetails.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
+    await prisma.token.deleteMany({
+      where: { userId: user.id, tokenType: TokenType.email_validation },
+    });
+  } catch (error: unknown) {
+    console.log(error);
+    throw new ApiError(401, "Email verification failed");
+  }
 };
 
 /*
@@ -56,22 +64,26 @@ if (passCompromised) {
 	return next(createError.BadRequest("This password has been compromised."));
 }
 */
-export const isPasswordCompromised = async (password: string): Promise<boolean> => {
-    const hash = sha1(password).toUpperCase();
-    const prefix = hash.slice(0, 5);
-    const suffix = hash.slice(5);
+export const isPasswordCompromised = async (
+  password: string,
+): Promise<boolean> => {
+  const hash = sha1(password).toUpperCase();
+  const prefix = hash.slice(0, 5);
+  const suffix = hash.slice(5);
 
-    const response = await axios.get(`https://api.pwnedpasswords.com/range/${prefix}`);
-    const hashes = response.data.split("\r\n");
+  const response = await axios.get(
+    `https://api.pwnedpasswords.com/range/${prefix}`,
+  );
+  const hashes = response.data.split("\r\n");
 
-    for (const hash of hashes) {
-        const [hashSuffix, count] = hash.split(":");
-        if (hashSuffix === suffix) {
-            return true;
-        }
+  for (const hash of hashes) {
+    const [hashSuffix] = hash.split(":");
+    if (hashSuffix === suffix) {
+      return true;
     }
+  }
 
-    return false;
+  return false;
 };
 
 /*
@@ -87,9 +99,11 @@ if (tempEmail) {
 }
 */
 export const isEmailTemporay = async (email: string): Promise<boolean> => {
-    const domain = email.split("@")[1];
-    const response = await axios.get(`https://disposable.debounce.io/?domain=${domain}`);
-    return response.data.disposable;
+  const domain = email.split("@")[1];
+  const response = await axios.get(
+    `https://disposable.debounce.io/?domain=${domain}`,
+  );
+  return response.data.disposable;
 };
 
 /*
@@ -105,8 +119,10 @@ if (tempEmail) {
 }
 */
 export const isEmailTemporayII = async (email: string): Promise<boolean> => {
-    const response = await axios.get(`https://block-temp-email.vercel.app/api/${email}`);
-    return response.data.blocked;
+  const response = await axios.get(
+    `https://block-temp-email.vercel.app/api/${email}`,
+  );
+  return response.data.blocked;
 };
 
 /**
@@ -120,6 +136,9 @@ export const isEmailTemporayII = async (email: string): Promise<boolean> => {
  */
 // Function to generate a unique username
 export const generateUsername = (firstName: string, lastName: string) => {
-    const hash = createHash("md5").update(`${firstName}${lastName}${Date.now()}`).digest("hex").slice(0, 6);
-    return `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${hash}`;
+  const hash = createHash("md5")
+    .update(`${firstName}${lastName}${Date.now()}`)
+    .digest("hex")
+    .slice(0, 6);
+  return `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${hash}`;
 };

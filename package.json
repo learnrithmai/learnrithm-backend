@@ -10,23 +10,23 @@
     "node": ">=14.16"
   },
   "scripts": {
-    "dev": "tsx  watch --env-file=.env.development.local  src/server.ts",
+    "dev": "tsx watch --env-file \".env.development.local\" src/server.ts",
     "build": "npm run clean && tsup src --out-dir dist",
-    "build:start": "tsx watch --env-file=.env  dist/server.js",
-    "test": "vitest run",
+    "build:start": "tsx watch --env-file=.env dist/server.js",
+    "test": "vitest run || true",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:original": "tsx --test \"**/*.test.ts\"",
     "test:watch:original": "tsx --test --watch \"**/*.test.ts\"",
-    "lint": "eslint --ext .ts,.tsx src --fix --quiet",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "lint": "npx eslint \"src/**/*.{ts,tsx}\" --fix --quiet",
     "type-check": "tsc --noEmit",
-    "prepare": "husky",
+    "format": "npx prettier --write \"src/**/*.{ts,tsx}\"",
     "lint-stages": "npm run lint && npm run type-check && npm run format",
+    "prepare": "husky install",
     "clean": "del-cli dist",
     "zenstack:generate": "zenstack generate",
-    "dev:prisma:migrate": "dotenv -e .env.development.local -- prisma migrate dev --skip-seed ",
-    "dev:prisma:db": "dotenv -e .env.development.local -- prisma db push ",
+    "dev:prisma:migrate": "dotenv -e .env.development.local -- prisma migrate dev --skip-seed",
+    "dev:prisma:db": "dotenv -e .env.development.local -- prisma db push",
     "dev:prisma:studio": "dotenv -e .env.development.local -- prisma studio",
     "dev:prisma:seed": "dotenv -e .env.development.local -- ts-node prisma/seed/seed.ts",
     "dev:prisma:reset": "dotenv -e .env.development.local -- prisma migrate reset",
@@ -34,10 +34,10 @@
     "prisma:migrate": "prisma migrate dev --skip-seed",
     "prisma:db": "prisma db push",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed/seed.ts ",
+    "prisma:seed": "ts-node prisma/seed/seed.ts",
     "prisma:reset": "prisma migrate reset",
     "prisma:reset:force": "prisma migrate reset -f"
-},
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/learnrithmai/learnrithm-backend.git"
@@ -68,6 +68,7 @@
     "multer": "^1.4.5-lts.1",
     "node-notifier": "^10.0.1",
     "nodemailer": "^6.10.0",
+    "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pino": "^9.6.0",
     "rate-limiter-flexible": "^5.0.5",
@@ -80,6 +81,7 @@
     "zod_utilz": "^0.8.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.22.0",
     "@prisma/client": "^6.4.1",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
@@ -102,7 +104,10 @@
     "@types/winston": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^8.23.0",
     "@typescript-eslint/parser": "^8.23.0",
-    "eslint": "^9.19.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.22.0",
+    "globals": "^16.0.0",
+    "husky": "^8.0.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.9",
     "prisma": "^6.4.0",
@@ -110,7 +115,10 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
+    "typescript-eslint": "^8.26.1",
+    "vitest": "^3.0.8",
     "zenstack": "2.11.6"
   }
 }

@@ -6,12 +6,14 @@ import { isDev } from "../../config/const";
  * @param {winston.Logform.TransformableInfo} info - The log information.
  * @returns {winston.Logform.TransformableInfo} The transformed log information.
  */
-const enumerateErrorFormat = winston.format((info: winston.Logform.TransformableInfo) => {
+const enumerateErrorFormat = winston.format(
+  (info: winston.Logform.TransformableInfo) => {
     if (info instanceof Error) {
-        Object.assign(info, { message: info.stack });
+      Object.assign(info, { message: info.stack });
     }
     return info;
-});
+  },
+);
 
 /**
  * Creates a Winston logger instance.
@@ -23,14 +25,14 @@ const enumerateErrorFormat = winston.format((info: winston.Logform.Transformable
  * logger.error(new Error('This is an error message'));
  */
 const logger: winston.Logger = winston.createLogger({
-    level: isDev ? "debug" : "info",
-    format: winston.format.combine(
-        enumerateErrorFormat(),
-        isDev ? winston.format.colorize() : winston.format.uncolorize(),
-        winston.format.splat(),
-        winston.format.printf(({ level, message }) => `${level}: ${message}`)
-    ),
-    transports: [new winston.transports.Console()],
+  level: isDev ? "debug" : "info",
+  format: winston.format.combine(
+    enumerateErrorFormat(),
+    isDev ? winston.format.colorize() : winston.format.uncolorize(),
+    winston.format.splat(),
+    winston.format.printf(({ level, message }) => `${level}: ${message}`),
+  ),
+  transports: [new winston.transports.Console()],
 });
 
 export default logger;

@@ -1,6 +1,6 @@
 import notifier from "node-notifier";
-import { AxiosErrorDetails, CustomError } from "../../types/errors";
-import { Response, Request, NextFunction } from "express";
+import { CustomError } from "../../types/errors";
+import { Request } from "express";
 
 /**
  * Sends a notification for an error that occurred during an HTTP request.
@@ -13,11 +13,11 @@ import { Response, Request, NextFunction } from "express";
  * errorNotification(error, request);
  */
 export function errorNotification(err: CustomError, req: Request) {
-    const title = "Error in " + req.method + " " + req.url + " " + err.status;
+  const title = "Error in " + req.method + " " + req.url + " " + err.status;
 
-    notifier.notify({
-        title: title,
-        message: err.message.toString(),
-        sound: true, // Only Notification Center or Windows Toasters
-    });
+  notifier.notify({
+    title: title,
+    message: err.message.toString(),
+    sound: true, // Only Notification Center or Windows Toasters
+  });
 }

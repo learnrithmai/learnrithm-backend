@@ -17,7 +17,7 @@ import pino, { Logger } from "pino";
  */
 
 export const pinoLog: Logger = pino({
-    transport: {
-        target: "pino-pretty",
-    },
+  transport: {
+    target: "pino-pretty",
+  },
 });

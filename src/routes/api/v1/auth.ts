@@ -1,6 +1,5 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import validate from "express-zod-safe";
-import auth from "@/middleware/auth/passportJWTAuth";
 
 import {
   registerUser,
@@ -41,7 +40,7 @@ router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 
 // Send a verification email (requires an authenticated user)
-router.post("/send-verification-email", auth(), sendVerificationEmail);
+router.post("/send-verification-email", sendVerificationEmail);
 
 // Verify email using the token from query parameters
 router.post("/verify-email", validate(verifyEmailSchema), verifyEmail);
