@@ -1,11 +1,10 @@
 import express, { Router } from "express";
-import validate from "express-zod-safe";
-import auth from "@/middleware/auth/passportJWTAuth";
-import {
-  getUser,
-  updateUser
-} from "@controllers/user-controller";
-import { updateUserSchema } from "@/validations/userSchema";
+// import validate from "express-zod-safe";
+// import {
+//   getUser,
+//   updateUser
+// } from "@controllers/user-controller";
+// import { updateUserSchema } from "@/validations/userSchema";
 // Optionally, add a query validation schema for GET /users if available
 
 const router: Router = express.Router();
@@ -240,9 +239,9 @@ const router: Router = express.Router();
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-router
-  .route("/:id")
-  .get(auth("getUsers"), getUser)
-  .patch(auth("manageUsers"), validate(updateUserSchema), updateUser)
+// router
+//   .route("/:id")
+//   .get(auth("getUsers"), getUser)
+//   .patch(auth("manageUsers"), validate(updateUserSchema), updateUser)
 
 export default router;
