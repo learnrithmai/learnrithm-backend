@@ -1,7 +1,7 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application, Response } from "express";
 import dotenv from "dotenv";
 import path, { join } from "node:path";
-import passport from "passport";
+// import passport from "passport";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
@@ -12,12 +12,13 @@ import { rateLimiterMiddleware } from "./middleware/rateLimiter/rateLimiter";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import { attachMetadata } from "./middleware/attachMetadata";
-import { jwtStrategy } from "./config/auth/passportjsConfig";
+// import { jwtStrategy } from "./config/auth/passportjsConfig";
 import prisma from "./config/db/prisma";
 import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
 import apiV1Routes from "@routes/api/v1";
 import { errorHandler } from "./middleware/errorHandler";
+import {__dirname } from '@/config/const'
 
 dotenv.config();
 
@@ -71,27 +72,21 @@ app.use(express.static(join(__dirname, "public")));
 // disable "x-powered-by Express" in the req header
 app.disable("x-powered-by");
 
-//? Auth
-//* PassportJS JWT authentication
-app.use(passport.initialize());
-passport.use("jwt", jwtStrategy);
+// //? Auth
+// //* PassportJS JWT authentication
+// app.use(passport.initialize());
+// passport.use("jwt", jwtStrategy);
 
 // Serve static files from the "static" folder
 app.use(express.static(path.join(__dirname, "../public", "static")));
 
 // Default route - serve the HTML page with the image and text
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (res: Response) => {
   res.sendFile(path.join(__dirname, "../public", "static", "index.html"));
 });
 
 //APIs Consume
 app.use("/api/v1", apiV1Routes);
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
 
 // global error handling
 app.use(errorHandler);
@@ -112,8 +107,8 @@ async function startServer() {
     console.table(PostgresDbInfo);
 
     // Start the server
-    app.listen(PORT, () =>
-      logger.database(`Server running on port `, `${PORT}`),
+    app.listen(process.env.PORT || 5000, () =>
+      logger.database(`Server running on port `, `${process.env.PORT || 5000}`),
     );
   } catch (error) {
     logger.error("Failed to connect to the database", error as string);

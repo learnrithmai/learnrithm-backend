@@ -53,7 +53,7 @@
     "@auth/express": "^0.8.4",
     "@types/pino": "^7.0.4",
     "axios": "^1.7.9",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -83,7 +83,6 @@
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@prisma/client": "^6.4.1",
-    "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.8",

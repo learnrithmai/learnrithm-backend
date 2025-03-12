@@ -59,8 +59,8 @@ export const sendResetPasswordEmail = async (
   ];
 
   const mailOptions: SendMailOptions = {
-    from: ENV.EMAIL_FROM
-      ? `Learnrithm AI <${ENV.EMAIL_FROM}>`
+    from: ENV.ZOHO_SMTP_USERNAME
+      ? `Learnrithm AI <${ENV.ZOHO_SMTP_USERNAME}>`
       : "support@learnrithm.com",
     to: user.email,
     subject,
@@ -97,8 +97,8 @@ export const sendSuccessResetPasswordEmail = async (
   ];
 
   const mailOptions: SendMailOptions = {
-    from: ENV.EMAIL_FROM
-      ? `Learnrithm AI <${ENV.EMAIL_FROM}>`
+    from: ENV.ZOHO_SMTP_USERNAME
+      ? `Learnrithm AI <${ENV.ZOHO_SMTP_USERNAME}>`
       : "support@learnrithm.com",
     to: user.email,
     subject,
@@ -141,8 +141,8 @@ export const sendVerificationEmail = async (
   ];
 
   const mailOptions: SendMailOptions = {
-    from: ENV.EMAIL_FROM
-      ? `Learnrithm AI <${ENV.EMAIL_FROM}>`
+    from: ENV.ZOHO_SMTP_USERNAME
+      ? `Learnrithm AI <${ENV.ZOHO_SMTP_USERNAME}>`
       : "support@learnrithm.com",
     to: user.email,
     subject,

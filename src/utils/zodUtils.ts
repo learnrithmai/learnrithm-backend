@@ -20,7 +20,7 @@ import createError from "http-errors";
  * const result2 = schema.parse(""); // Throws an error because the string is empty 💢
  */
 
-export const stringNonEmpty = (errorMap?: z.ZodErrorMap) => {
+export const stringNonEmpty = (errorMap?: z.ZodErrorMap): z.ZodString => {
   return z
     .string({ errorMap: errorMap })
     .min(1, { message: "cannot be empty" });
@@ -314,7 +314,7 @@ export async function zParse<T extends AnyZodObject>(
  * app.post('/reset-password', validate(resetPassword), yourController);
  */
 export const validate =
-  (schema: AnyZodObject) =>
+  (schema: AnyZodObject): (req: Request, res: Response, next: NextFunction) => Promise<void> =>
   /**
    * Express middleware function.
    * @param {Request} req - The Express request object.
@@ -364,7 +364,7 @@ export const validate =
  *  // Outputs: "Validation error at user.address.street: Expected string, received number
  */
 
-export function formatPath(path: Array<string | number>) {
+export function formatPath(path: Array<string | number>): string {
   if (!Array.isArray(path) || path.length === 0) {
     throw new Error("Path must be a non-empty array");
   }
@@ -398,5 +398,5 @@ export function formatPath(path: Array<string | number>) {
  * const preprocessedUrl = preprocessUrl(url, port);
  * console.log(preprocessedUrl); // http://localhost:3000/api/v1
  */
-export const preprocessUrl = (url: string, port: number) =>
+export const preprocessUrl = (url: string, port: number): string =>
   url.replace("${PORT}", port.toString());
