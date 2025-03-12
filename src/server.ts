@@ -18,6 +18,7 @@ import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
 import apiV1Routes from "@routes/api/v1";
 import { errorHandler } from "./middleware/errorHandler";
+import { __dirname } from "@/config/const";
 
 dotenv.config();
 
@@ -77,43 +78,38 @@ app.use(passport.initialize());
 passport.use("jwt", jwtStrategy);
 
 // Serve static files from the "static" folder
-app.use(express.static(path.join(__dirname, "../public", "static")));
+app.use(express.static(path.join(__dirname, "../../public", "static")));
 
 // Default route - serve the HTML page with the image and text
 app.get("/", (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "../public", "static", "index.html"));
+  res.sendFile(path.join(__dirname, "../../public", "static", "index.html"));
 });
+
+console.log("__dirname:", __dirname);
 
 //APIs Consume
 app.use("/api/v1", apiV1Routes);
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
 
 // global error handling
 app.use(errorHandler);
 
 async function startServer() {
   try {
-    // Connect to the PostgreSQL database
+    // Connect to the MongoDB database
+    await prisma.$connect()
     console.log("Connected to MongoDB .... 🐲");
-    await prisma.$connect();
-
     // Manually log the database connection details
-    const PostgresDbInfo = {
-      "DB Name": ENV.DB_NAME,
+    const DatabaseInfo = {
+    "DB Name": ENV.DB_NAME,
       User: ENV.DB_USER,
       Host: ENV.DB_HOST,
       Port: ENV.DB_PORT,
     };
-    console.table(PostgresDbInfo);
+    console.table(DatabaseInfo);
 
     // Start the server
-    app.listen(PORT, () =>
-      logger.database(`Server running on port `, `${PORT}`),
+    app.listen(process.env.PORT || 5000, () =>
+      logger.database(`Server running on port `, `${process.env.PORT || 5000}`),
     );
   } catch (error) {
     logger.error("Failed to connect to the database", error as string);

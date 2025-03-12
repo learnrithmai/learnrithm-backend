@@ -3,7 +3,7 @@ import ApiError from "@/utils/apiError";
 import { verifyToken } from "@/utils/tokenUtils";
 import { TokenType } from "@prisma/client";
 import axios from "axios";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { createHash } from "node:crypto";
 import sha1 from "sha1";
 
