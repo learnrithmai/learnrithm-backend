@@ -1,7 +1,7 @@
-import express, { Application, Response } from "express";
+import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
 import path, { join } from "node:path";
-// import passport from "passport";
+import passport from "passport";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
@@ -12,13 +12,13 @@ import { rateLimiterMiddleware } from "./middleware/rateLimiter/rateLimiter";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import { attachMetadata } from "./middleware/attachMetadata";
-// import { jwtStrategy } from "./config/auth/passportjsConfig";
+import { jwtStrategy } from "./config/auth/passportjsConfig";
 import prisma from "./config/db/prisma";
 import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
 import apiV1Routes from "@routes/api/v1";
 import { errorHandler } from "./middleware/errorHandler";
-import {__dirname } from '@/config/const'
+import { __dirname } from "@/config/const";
 
 dotenv.config();
 
@@ -72,18 +72,20 @@ app.use(express.static(join(__dirname, "public")));
 // disable "x-powered-by Express" in the req header
 app.disable("x-powered-by");
 
-// //? Auth
-// //* PassportJS JWT authentication
-// app.use(passport.initialize());
-// passport.use("jwt", jwtStrategy);
+//? Auth
+//* PassportJS JWT authentication
+app.use(passport.initialize());
+passport.use("jwt", jwtStrategy);
 
 // Serve static files from the "static" folder
-app.use(express.static(path.join(__dirname, "../public", "static")));
+app.use(express.static(path.join(__dirname, "../../public", "static")));
 
 // Default route - serve the HTML page with the image and text
-app.get("/", (res: Response) => {
-  res.sendFile(path.join(__dirname, "../public", "static", "index.html"));
+app.get("/", (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "../../public", "static", "index.html"));
 });
+
+console.log("__dirname:", __dirname);
 
 //APIs Consume
 app.use("/api/v1", apiV1Routes);
@@ -93,18 +95,17 @@ app.use(errorHandler);
 
 async function startServer() {
   try {
-    // Connect to the PostgreSQL database
+    // Connect to the MongoDB database
+    await prisma.$connect()
     console.log("Connected to MongoDB .... 🐲");
-    await prisma.$connect();
-
     // Manually log the database connection details
-    const PostgresDbInfo = {
-      "DB Name": ENV.DB_NAME,
+    const DatabaseInfo = {
+    "DB Name": ENV.DB_NAME,
       User: ENV.DB_USER,
       Host: ENV.DB_HOST,
       Port: ENV.DB_PORT,
     };
-    console.table(PostgresDbInfo);
+    console.table(DatabaseInfo);
 
     // Start the server
     app.listen(process.env.PORT || 5000, () =>

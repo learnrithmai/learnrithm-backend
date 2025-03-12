@@ -30,7 +30,7 @@ export const envSchema = z.object({
   DB_HOST: z.string().default("localhost"),
   DB_PORT: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).max(65536).default(27017) // MongoDB default port
+    numberSchema.min(1).max(65536).default(27017), // MongoDB default port
   ),
 
   // Environment
@@ -40,44 +40,50 @@ export const envSchema = z.object({
 
   // Server URLs (transformed using the PORT value from process.env)
   SERVER_URL: stringNonEmpty().transform((url): string =>
-    preprocessUrl(url, Number.parseInt(process.env?.PORT as unknown as string) || 5000)
+    preprocessUrl(
+      url,
+      Number.parseInt(process.env?.PORT as unknown as string) || 5000,
+    ),
   ),
   SERVER_API_URL: stringNonEmpty()
     .transform((url): string =>
-      preprocessUrl(url, Number.parseInt(process.env?.PORT as unknown as string) || 5000)
+      preprocessUrl(
+        url,
+        Number.parseInt(process.env?.PORT as unknown as string) || 5000,
+      ),
     )
     .refine((value) => value.includes("api"), {
       message: "SERVER_API_URL must include 'api'.",
     }),
   PORT: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).max(65536).default(3000)
+    numberSchema.min(1).max(65536).default(3000),
   ),
 
   // JWT Configuration
   JWT_SECRET: stringNonEmpty(),
   JWT_ACCESS_EXPIRATION_MINUTES: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).default(30)
+    numberSchema.min(1).default(30),
   ),
   JWT_REFRESH_EXPIRATION_DAYS: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).default(30)
+    numberSchema.min(1).default(30),
   ),
   JWT_RESET_PASSWORD_EXPIRATION_MINUTES: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).default(10)
+    numberSchema.min(1).default(10),
   ),
   JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).default(10)
+    numberSchema.min(1).default(10),
   ),
 
   // SMTP Configuration
   ZOHO_SMTP_HOST: stringNonEmpty().default("smtp.zoho.com"),
   ZOHO_SMTP_PORT: z.preprocess(
     (x) => (x ? Number(x) : undefined),
-    numberSchema.min(1).max(65536).default(587)
+    numberSchema.min(1).max(65536).default(587),
   ),
   ZOHO_SMTP_USERNAME: stringNonEmpty().email(),
   ZOHO_SMTP_PASSWORD: stringNonEmpty(),
@@ -88,7 +94,7 @@ type Env = z.infer<typeof envSchema>;
 
 declare global {
   namespace NodeJS {
-    interface ProcessEnv extends Env { }
+    interface ProcessEnv extends Env {}
   }
 }
 
