@@ -133,7 +133,8 @@ model Transaction {
   duration          String
   subscriptionStart DateTime
   subscriptionEnd   DateTime
-  orderId           String
+  orderName         String
+  orderVariant      String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   refunded          Boolean
@@ -147,13 +148,23 @@ model Transaction {
 
 model Product {
   id                String   @id @map("_id") @default(auto()) @db.ObjectId
-  name              String   @unique
+  name              String   
   nameId            String
   variant           String
   variantId         String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   freeTrailAmount   Int
+
+
+  @@unique([name, variant])
+}
+
+model Subscription {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  email             String   @unique
+  orderName         String
+  orderVariant      String
 }
 
 
