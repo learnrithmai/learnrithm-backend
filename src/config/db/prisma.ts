@@ -1,5 +1,10 @@
 import { isProd } from "../const";
 import { PrismaClient } from "@prisma/client";
+import { fileURLToPath } from "url";
+import path from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+path.dirname(__filename);
 
 interface CustomNodeJsGlobal extends Global {
   prisma: PrismaClient;
