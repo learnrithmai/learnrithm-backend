@@ -5,5 +5,8 @@ export default defineConfig({
   format: ['esm'],
   outDir: 'dist',
   sourcemap: false,
-  external: ['os', 'path'],
+  external: ['path', 'os', 'http-errors', 'depd'],
+  noExternal: ['@prisma/client'],
+  platform: 'node',
+  target: 'node16',
 });

@@ -1,9 +1,9 @@
-import { createRequire } from 'module';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
-import path, { join } from "node:path";
+const path = require('path');
+import { join } from "node:path";
 import passport from "passport";
 import helmet from "helmet";
 import cors from "cors";
