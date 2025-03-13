@@ -4,7 +4,6 @@
 
 import log from "@/utils/chalkLogger";
 import { AnyZodObject, z, ZodError } from "zod";
-import { zu } from "zod_utilz";
 
 import { NextFunction, Request, Response } from "express";
 import createError from "http-errors";
@@ -20,7 +19,7 @@ import createError from "http-errors";
  * const result2 = schema.parse(""); // Throws an error because the string is empty 💢
  */
 
-export const stringNonEmpty = (errorMap?: z.ZodErrorMap) => {
+export const stringNonEmpty = (errorMap?: z.ZodErrorMap): z.ZodString => {
   return z
     .string({ errorMap: errorMap })
     .min(1, { message: "cannot be empty" });
@@ -34,21 +33,40 @@ export const stringNonEmpty = (errorMap?: z.ZodErrorMap) => {
  *
  */
 
-export const errorMap = zu.makeErrorMap({
-  required: "is required",
-  invalid_string: (err) => {
-    if (err.validation === "url") {
-      return `(${err.data}) must be a valid URL`;
-    } else if (err.validation === "email") {
-      return `(${err.data}) must be a valid email`;
-    }
-    return `${err.data} : must be a string`;
-  },
-  invalid_type: (err) => `${err.defaultError} : ${err.data}`,
-  invalid_enum_value: ({ data, options }) =>
-    `${data} : is not a valid enum value. Valid options: ${options?.join(" | ")} `,
-  too_small: (err) => `value ${err.data}  expected to be  >= ${err.minimum}`,
-  too_big: (err) => `value ${err.data} : expected to be  <= ${err.maximum}`,
+export const errorMap = z.setErrorMap((issue, ctx) => {
+  switch (issue.code) {
+    case z.ZodIssueCode.invalid_type:
+      if (issue.received === undefined) {
+        return { message: "is required" };
+      }
+      return { message: `${ctx.defaultError} : ${issue.received}` };
+
+    case z.ZodIssueCode.invalid_string:
+      if (issue.validation === "url") {
+        return { message: `(${ctx.data}) must be a valid URL` };
+      } else if (issue.validation === "email") {
+        return { message: `(${ctx.data}) must be a valid email` };
+      }
+      return { message: `${ctx.data} : must be a string` };
+
+    case z.ZodIssueCode.invalid_enum_value:
+      return {
+        message: `${ctx.data} : is not a valid enum value. Valid options: ${issue.options?.join(" | ")}`,
+      };
+
+    case z.ZodIssueCode.too_small:
+      return {
+        message: `value ${ctx.data} expected to be >= ${issue.minimum}`,
+      };
+
+    case z.ZodIssueCode.too_big:
+      return {
+        message: `value ${ctx.data} : expected to be <= ${issue.maximum}`,
+      };
+
+    default:
+      return { message: ctx.defaultError };
+  }
 });
 
 /**
@@ -314,7 +332,9 @@ export async function zParse<T extends AnyZodObject>(
  * app.post('/reset-password', validate(resetPassword), yourController);
  */
 export const validate =
-  (schema: AnyZodObject) =>
+  (
+    schema: AnyZodObject,
+  ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) =>
   /**
    * Express middleware function.
    * @param {Request} req - The Express request object.
@@ -364,7 +384,7 @@ export const validate =
  *  // Outputs: "Validation error at user.address.street: Expected string, received number
  */
 
-export function formatPath(path: Array<string | number>) {
+export function formatPath(path: Array<string | number>): string {
   if (!Array.isArray(path) || path.length === 0) {
     throw new Error("Path must be a non-empty array");
   }
@@ -398,5 +418,5 @@ export function formatPath(path: Array<string | number>) {
  * const preprocessedUrl = preprocessUrl(url, port);
  * console.log(preprocessedUrl); // http://localhost:3000/api/v1
  */
-export const preprocessUrl = (url: string, port: number) =>
+export const preprocessUrl = (url: string, port: number): string =>
   url.replace("${PORT}", port.toString());

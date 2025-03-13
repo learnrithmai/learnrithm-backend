@@ -28,7 +28,7 @@ import {
   VerifyEmailQuery,
 } from "@/validations/authSchema";
 import { TokenType } from "@prisma/client";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 
 // ────────────────────────────────────────────────────────────────
