@@ -1,4 +1,3 @@
-// tsup.config.ts
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
@@ -6,7 +5,7 @@ export default defineConfig({
   format: ['esm'],
   outDir: 'dist',
   sourcemap: false,
-  external: ['os', 'path'],  // keep these external
+  external: ['os', 'path'],
   banner: {
     js: `import { createRequire } from 'module';
 const require = createRequire(import.meta.url);`
