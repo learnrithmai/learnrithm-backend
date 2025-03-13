@@ -1,13 +1,22 @@
-import { isProd } from "../const";
-import { PrismaClient } from "@prisma/client";
-
-interface CustomNodeJsGlobal extends Global {
-  prisma: PrismaClient;
+/* eslint-disable no-var */
+declare global {
+  var prisma: PrismaClient | undefined;
 }
+/* eslint-enable no-var */
 
-declare const global: CustomNodeJsGlobal;
+import { isProd } from "../const";
+import { PrismaClient as BasePrismaClient } from "@prisma/client";
+import { createRequire } from "module";
 
-const prisma =
+const require = createRequire(import.meta.url);
+const { PrismaClient: RequiredPrismaClient } = require("@prisma/client");
+const _PrismaClient: typeof BasePrismaClient = RequiredPrismaClient;
+
+// Extend the base PrismaClient with any customizations.
+export class PrismaClient extends _PrismaClient {}
+
+// Create or reuse a PrismaClient instance.
+const prismaInstance =
   global.prisma ||
   new PrismaClient({
     omit: {
@@ -17,8 +26,9 @@ const prisma =
     },
   });
 
+// In non-production, store the client instance globally for hot reloading.
 if (!isProd) {
-  global.prisma = prisma;
+  global.prisma = prismaInstance;
 }
 
-export default prisma;
+export default prismaInstance;

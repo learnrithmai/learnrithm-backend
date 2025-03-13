@@ -6,8 +6,4 @@ export default defineConfig({
   outDir: 'dist',
   sourcemap: false,
   external: ['os', 'path'],
-  banner: {
-    js: `import { createRequire } from 'module';
-const require = createRequire(import.meta.url);`
-  },
 });
