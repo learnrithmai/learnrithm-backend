@@ -8,3 +8,9 @@ export interface TransactionData {
   refunded: boolean;
   freeTrial: boolean;
 }
+
+export interface CheckoutUrlInfo {
+  email: string;
+  orderName: string;
+  orderVariant: string;
+}

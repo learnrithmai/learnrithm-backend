@@ -2,6 +2,7 @@ import {
   createLemonUser,
   createProduct,
   createTransaction,
+  fetchProducts,
   LemonSq,
   lemonWebhook,
   searchProduct,
@@ -43,4 +44,6 @@ import {
 
 //console.log(await createLemonUser("zhou", "test@testtest.com"));
 
-console.log(await lemonWebhook());
+//console.log(await lemonWebhook());
+
+console.log(await fetchProducts("721891"));

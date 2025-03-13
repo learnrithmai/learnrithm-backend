@@ -146,7 +146,7 @@ model Transaction {
 //   Payment models     //
 //////////////////////////
 
-model Product {
+model LocalProduct {
   id                String   @id @map("_id") @default(auto()) @db.ObjectId
   name              String   
   nameId            String

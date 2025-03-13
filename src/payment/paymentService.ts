@@ -1,5 +1,5 @@
-import { TransactionData } from "@/types/transaction";
-import { PrismaClient, Product, Transaction } from "@prisma/client";
+import { CheckoutUrlInfo, TransactionData } from "@/types/transaction";
+import { PrismaClient, LocalProduct, Transaction } from "@prisma/client";
 import {
   getAuthenticatedUser,
   lemonSqueezySetup,
@@ -7,8 +7,11 @@ import {
   type NewCustomer,
   NewCheckout,
   createCheckout,
-  Checkout,
   createWebhook,
+  getProduct,
+  Product,
+  getVariant,
+  Variant,
 } from "@lemonsqueezy/lemonsqueezy.js";
 
 // Configruation
@@ -29,11 +32,10 @@ export const createTransaction = async (
 
 // Update transaction for existing user
 export const updateTransaction = async (
-  data: TransactionData,
-  email: string
+  data: Transaction
 ): Promise<Transaction> => {
   return prisma.transaction.update({
-    where: { email },
+    where: { email: data.email },
     data: {
       duration: data.duration,
       subscriptionStart: data.subscriptionStart,
@@ -82,8 +84,8 @@ export const createProduct = async (data: {
   variant: string;
   variantId: string;
   freeTrailAmount: number;
-}): Promise<Product> => {
-  return prisma.product.create({ data });
+}): Promise<LocalProduct> => {
+  return prisma.localProduct.create({ data });
 };
 
 // Update a product in database
@@ -93,8 +95,8 @@ export const updateProduct = async (data: {
   variant: string;
   variantId: string;
   freeTrailAmount: number;
-}): Promise<Product | null> => {
-  return prisma.product.update({
+}): Promise<LocalProduct | null> => {
+  return prisma.localProduct.update({
     where: {
       name_variant: { name: data.name, variant: data.variant },
     },
@@ -110,8 +112,8 @@ export const updateProduct = async (data: {
 export const searchProduct = async (
   name: string,
   variant: string
-): Promise<Product | null> => {
-  return prisma.product.findUnique({
+): Promise<LocalProduct | null> => {
+  return prisma.localProduct.findUnique({
     where: {
       name_variant: {
         name,
@@ -119,6 +121,34 @@ export const searchProduct = async (
       },
     },
   });
+};
+
+// Fetch Products from Lemon Squeezy
+// Run this somewhere for once
+// To load your database with the product data
+export const fetchProducts = async (
+  id: string
+): Promise<LocalProduct | null> => {
+  const productVariant: Variant | null = (await getVariant(id)).data;
+  if (!productVariant) {
+    return null;
+  }
+  const product: Product | null = (
+    await getProduct(productVariant.data.attributes.product_id)
+  ).data;
+  if (!product) {
+    return null;
+  }
+
+  const response: LocalProduct = await createProduct({
+    name: product.data.attributes.name,
+    nameId: productVariant.data.attributes.product_id.toString(),
+    variant: productVariant.data.attributes.name,
+    variantId: productVariant.data.id,
+    freeTrailAmount: productVariant.data.attributes.trial_interval_count,
+  });
+
+  return response;
 };
 
 export const LemonSq = async () => {
@@ -145,13 +175,13 @@ export const createLemonUser = async (name: string, email: string) => {
 };
 
 export const createCheckoutData = async (
-  email: string,
-  variantId: string
-): Promise<Checkout | null> => {
+  variantId: string,
+  data: CheckoutUrlInfo
+): Promise<string | null> => {
   const newCheckout: NewCheckout = {
     productOptions: {
-      name: "Default Checkout",
-      description: "Default Checkout Process",
+      name: data.orderName,
+      description: "to be confirmed",
     },
     checkoutOptions: {
       embed: true,
@@ -159,8 +189,9 @@ export const createCheckoutData = async (
       logo: true,
     },
     checkoutData: {
-      email: email,
+      email: data.email,
       name: "test_customer",
+      custom: {},
     },
     expiresAt: null,
     preview: true,
@@ -168,7 +199,16 @@ export const createCheckoutData = async (
   };
 
   const checkoutData = await createCheckout(store_id, variantId, newCheckout);
-  return checkoutData.data;
+
+  if (!checkoutData) {
+    return null;
+  }
+
+  const url: string | undefined = checkoutData.data?.data.attributes.url;
+  if (url === undefined) {
+    return null;
+  }
+  return url;
 };
 
 export const lemonWebhook = async () => {
