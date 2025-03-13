@@ -5,7 +5,7 @@ export default defineConfig({
   format: ['esm'],
   outDir: 'dist',
   sourcemap: false,
-  external: ['os', 'path'],
+  external: ['os', 'path', 'url'],
   banner: {
     js: `import { createRequire } from 'module';
 const require = createRequire(import.meta.url);`

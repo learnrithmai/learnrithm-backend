@@ -1,12 +1,14 @@
-import path from 'path';
+import path from "path";
+import { fileURLToPath } from 'url';
 import { isProd } from "../const";
-import { PrismaClient } from '@prisma/client';
-import { __dirname } from '@/config/const'
+import { PrismaClient } from "@prisma/client";
+
+path.dirname(fileURLToPath(import.meta.url));
 
 // Set Prisma Query Engine Path (optional)
 process.env.PRISMA_QUERY_ENGINE_BINARY = path.join(
-  __dirname,
-  'node_modules/.prisma/client/query-engine-darwin'
+  process.cwd(),
+  "node_modules/.prisma/client/query-engine-darwin",
 );
 
 interface CustomNodeJsGlobal extends Global {
