@@ -66,7 +66,6 @@ app.use(attachMetadata);
 // Compress response bodies
 app.use(compression());
 
-
 // Serve static files
 app.use(express.static(join(__dirname, "public")));
 
