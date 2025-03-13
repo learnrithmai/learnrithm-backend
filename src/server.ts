@@ -96,11 +96,11 @@ app.use(errorHandler);
 async function startServer() {
   try {
     // Connect to the MongoDB database
-    await prisma.$connect()
+    await prisma.$connect();
     console.log("Connected to MongoDB .... 🐲");
     // Manually log the database connection details
     const DatabaseInfo = {
-    "DB Name": ENV.DB_NAME,
+      "DB Name": ENV.DB_NAME,
       User: ENV.DB_USER,
       Host: ENV.DB_HOST,
       Port: ENV.DB_PORT,
