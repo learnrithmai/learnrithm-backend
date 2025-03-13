@@ -9,9 +9,10 @@
   "engines": {
     "node": ">=14.16"
   },
+  
   "scripts": {
     "dev": "tsx watch --env-file \".env.development.local\" src/server.ts",
-    "build": "npm run clean && npx tsup src --format esm --out-dir dist --sourcemap false --external os --external path",
+    "build": "npm run clean && npx tsup src --format esm --out-dir dist --sourcemap false --external os --external path --external prisma",
     "start": "node dist/server.js",
     "start:watch": "tsx watch --env-file .env dist/server.js",
     "test": "vitest run || true",

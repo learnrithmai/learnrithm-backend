@@ -1,16 +1,10 @@
 import log from "../utils/chalkLogger";
 import { ENV } from "../validations/envSchema";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 
 export const isProd = ENV.NODE_ENV === "production";
 export const isDev = ENV.NODE_ENV === "development";
 
 log.debug("the mode is in const.js", ENV.NODE_ENV as string);
-
-// for __filename and __dirname in esm
-export const __filename = fileURLToPath(import.meta.url);
-export const __dirname = dirname(__filename);
 
 // for mongoose connection status
 export const readyStates = new Map<number, string>([
