@@ -1,6 +1,6 @@
 import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
-import path, { dirname, join } from "node:path";
+import path, { join } from "node:path";
 import passport from "passport";
 import helmet from "helmet";
 import cors from "cors";
@@ -18,11 +18,7 @@ import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
 import apiV1Routes from "@routes/api/v1";
 import { errorHandler } from "./middleware/errorHandler";
-import { fileURLToPath } from "node:url";
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { __dirname } from "@/config/const";
 
 dotenv.config();
 
@@ -83,11 +79,11 @@ app.use(passport.initialize());
 passport.use("jwt", jwtStrategy);
 
 // Serve static files from the "static" folder
-app.use(express.static(path.join(__dirname, "../public", "static")));
+app.use(express.static(path.join(__dirname, "../../public", "static")));
 
 // Default route - serve the HTML page with the image and text
 app.get("/", (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "../public", "static", "index.html"));
+  res.sendFile(path.join(__dirname, "../../public", "static", "index.html"));
 });
 
 //APIs Consume

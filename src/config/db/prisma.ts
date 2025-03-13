@@ -1,13 +1,11 @@
-import { isProd } from "../const";
-import { PrismaClient } from "@prisma/client";
-import { fileURLToPath } from "url";
-import path from "path";
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require('@prisma/client');
 
-const __filename = fileURLToPath(import.meta.url);
-path.dirname(__filename);
+import { isProd } from "../const";
 
 interface CustomNodeJsGlobal extends Global {
-  prisma: PrismaClient;
+  prisma: typeof PrismaClient;
 }
 
 declare const global: CustomNodeJsGlobal;
