@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": "src",
+    "typeRoots": ["./node_modules/@types", "./src/@types"],
     "target": "ESNext", /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
     "moduleDetection": "force", /* Control what method is used to detect module-format JS files. */
     "resolveJsonModule": true, // Allow JSON modules to be imported
