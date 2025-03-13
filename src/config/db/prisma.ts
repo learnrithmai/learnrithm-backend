@@ -6,9 +6,7 @@ declare global {
 
 import { isProd } from "../const";
 import { PrismaClient as BasePrismaClient } from "@prisma/client";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PrismaClient: RequiredPrismaClient } = require("@prisma/client");
 const _PrismaClient: typeof BasePrismaClient = RequiredPrismaClient;
 
