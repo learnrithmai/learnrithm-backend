@@ -30,7 +30,6 @@ export const corsOptions: CorsOptions = {
       console.error("ALLOWED_ORIGINS is not an array:", ENV.ALLOWED_ORIGINS);
       callback(new Error("CORS error"));
     }
-    
   },
   credentials: true, // this allows the session cookie to be sent back and forth
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204

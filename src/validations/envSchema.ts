@@ -34,8 +34,7 @@ export const envSchema = z.object({
 
   // Environment
   NODE_ENV: z.enum(["development", "production"]).default("development"),
-  ALLOWED_ORIGINS: z
-  .preprocess((val) => {
+  ALLOWED_ORIGINS: z.preprocess((val) => {
     if (typeof val === "string") {
       try {
         return JSON.parse(val); // Convert the string to an array
