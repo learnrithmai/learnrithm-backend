@@ -5,14 +5,14 @@
   "private": true,
   "version": "2.0.0",
   "license": "MIT",
-  "type": "module",
+  "type": "commonjs",
   "engines": {
     "node": ">=14.16"
   },
   "scripts": {
     "postprisma": "deno run --allow-write --allow-run --allow-read ./scripts/generate.ts",
     "dev": "tsx watch --env-file \".env.development.local\" src/server.ts",
-    "build": "npm run clean && npx tsup src --format esm --out-dir dist --sourcemap false --external os --external path --external prisma",
+    "build": "npm run clean && npx tsup src",
     "start": "node dist/server.js",
     "start:watch": "tsx watch --env-file .env dist/server.js",
     "test": "vitest run || true",
