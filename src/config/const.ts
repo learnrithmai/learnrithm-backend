@@ -1,8 +1,5 @@
 import log from "../utils/chalkLogger";
 import { ENV } from "../validations/envSchema";
-import { getGlobals } from 'common-es'
-
-export const { __dirname, __filename } = getGlobals(import.meta.url)
 
 export const isProd = ENV.NODE_ENV === "production";
 export const isDev = ENV.NODE_ENV === "development";
