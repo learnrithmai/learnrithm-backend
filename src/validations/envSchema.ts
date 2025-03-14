@@ -34,7 +34,17 @@ export const envSchema = z.object({
 
   // Environment
   NODE_ENV: z.enum(["development", "production"]).default("development"),
-  ALLOWED_ORIGINS: z.array(z.string().url()),
+  ALLOWED_ORIGINS: z
+  .preprocess((val) => {
+    if (typeof val === "string") {
+      try {
+        return JSON.parse(val); // Convert the string to an array
+      } catch {
+        return val.split(",").map((url) => url.trim()); // Fallback: split by commas
+      }
+    }
+    return val;
+  }, z.array(z.string().url())),
   CLIENT_URL: stringNonEmpty().url(),
 
   // Server URLs (transformed using the PORT value from process.env)

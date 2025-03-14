@@ -22,11 +22,15 @@ export const corsOptions: CorsOptions = {
     if (!origin && !isProd) return callback(null, true);
 
     //? Allow requests from the same origin
-    if ((ENV.ALLOWED_ORIGINS).includes(origin as string)) {
-      callback(null, true);
+    if (Array.isArray(ENV.ALLOWED_ORIGINS)) {
+      if (ENV.ALLOWED_ORIGINS.includes(origin as string)) {
+        callback(null, true);
+      }
     } else {
-      callback(new Error("Not allowed by CORS"));
+      console.error("ALLOWED_ORIGINS is not an array:", ENV.ALLOWED_ORIGINS);
+      callback(new Error("CORS error"));
     }
+    
   },
   credentials: true, // this allows the session cookie to be sent back and forth
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
