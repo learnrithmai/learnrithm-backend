@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable unicorn/no-useless-undefined */
 
 //?  ***************************** Zod Utils   **********************************  */
 
 import log from "@/utils/chalkLogger";
 import { AnyZodObject, z, ZodError } from "zod";
-import { zu } from "zod_utilz";
 
 import { NextFunction, Request, Response } from "express";
 import createError from "http-errors";
@@ -21,8 +19,10 @@ import createError from "http-errors";
  * const result2 = schema.parse(""); // Throws an error because the string is empty 💢
  */
 
-export const stringNonEmpty = (errorMap?: z.ZodErrorMap) => {
-    return z.string({ errorMap: errorMap }).min(1, { message: "cannot be empty" });
+export const stringNonEmpty = (errorMap?: z.ZodErrorMap): z.ZodString => {
+  return z
+    .string({ errorMap: errorMap })
+    .min(1, { message: "cannot be empty" });
 };
 
 /**
@@ -33,21 +33,40 @@ export const stringNonEmpty = (errorMap?: z.ZodErrorMap) => {
  *
  */
 
-export const errorMap = zu.makeErrorMap({
-    required: "is required",
-    invalid_string: (err) => {
-        if (err.validation === "url") {
-            return `(${err.data}) must be a valid URL`;
-        } else if (err.validation === "email") {
-            return `(${err.data}) must be a valid email`;
-        }
-        return `${err.data} : must be a string`;
-    },
-    invalid_type: (err) => `${err.defaultError} : ${err.data}`,
-    invalid_enum_value: ({ data, options }) =>
-        `${data} : is not a valid enum value. Valid options: ${options?.join(" | ")} `,
-    too_small: (err) => `value ${err.data}  expected to be  >= ${err.minimum}`,
-    too_big: (err) => `value ${err.data} : expected to be  <= ${err.maximum}`,
+export const errorMap = z.setErrorMap((issue, ctx) => {
+  switch (issue.code) {
+    case z.ZodIssueCode.invalid_type:
+      if (issue.received === undefined) {
+        return { message: "is required" };
+      }
+      return { message: `${ctx.defaultError} : ${issue.received}` };
+
+    case z.ZodIssueCode.invalid_string:
+      if (issue.validation === "url") {
+        return { message: `(${ctx.data}) must be a valid URL` };
+      } else if (issue.validation === "email") {
+        return { message: `(${ctx.data}) must be a valid email` };
+      }
+      return { message: `${ctx.data} : must be a string` };
+
+    case z.ZodIssueCode.invalid_enum_value:
+      return {
+        message: `${ctx.data} : is not a valid enum value. Valid options: ${issue.options?.join(" | ")}`,
+      };
+
+    case z.ZodIssueCode.too_small:
+      return {
+        message: `value ${ctx.data} expected to be >= ${issue.minimum}`,
+      };
+
+    case z.ZodIssueCode.too_big:
+      return {
+        message: `value ${ctx.data} : expected to be <= ${issue.maximum}`,
+      };
+
+    default:
+      return { message: ctx.defaultError };
+  }
 });
 
 /**
@@ -64,19 +83,22 @@ export const errorMap = zu.makeErrorMap({
  * const result3 = arraySchema.parse(123); // Throws an error because the input is neither a string nor an array 💢
  */
 
-export const arrayFromString = (schema: z.ZodSchema, defult: string = ""): z.ZodArray<z.ZodString> => {
-    return z.preprocess(
-        (obj) => {
-            if (Array.isArray(obj)) {
-                return obj;
-            } else if (typeof obj === "string") {
-                return obj.split(",");
-            } else {
-                return defult;
-            }
-        },
-        z.array(schema).nonempty({ message: "array cannot be empty" })
-    ) as unknown as z.ZodArray<z.ZodString>;
+export const arrayFromString = (
+  schema: z.ZodSchema,
+  defult: string = "",
+): z.ZodArray<z.ZodString> => {
+  return z.preprocess(
+    (obj) => {
+      if (Array.isArray(obj)) {
+        return obj;
+      } else if (typeof obj === "string") {
+        return obj.split(",");
+      } else {
+        return defult;
+      }
+    },
+    z.array(schema).nonempty({ message: "array cannot be empty" }),
+  ) as unknown as z.ZodArray<z.ZodString>;
 };
 
 /**
@@ -97,97 +119,112 @@ export const arrayFromString = (schema: z.ZodSchema, defult: string = ""): z.Zod
  * } )
  */
 export function defaultInstance<T extends z.ZodTypeAny>(
-    schema: z.AnyZodObject | z.ZodDefault<any> | z.ZodEffects<any>,
-    options: object = {}
+  schema: z.AnyZodObject | z.ZodDefault<any> | z.ZodEffects<any>,
+  options: object = {},
 ): z.infer<T> {
-    const defaultArrayEmpty = "defaultArrayEmpty" in options ? options.defaultArrayEmpty : false;
-    const defaultDateEmpty = "defaultDateEmpty" in options ? options.defaultDateEmpty : false;
-    const defaultDateUndefined = "defaultDateUndefined" in options ? options.defaultDateUndefined : false;
-    const defaultDateNull = "defaultDateNull" in options ? options.defaultDateNull : false;
+  const defaultArrayEmpty =
+    "defaultArrayEmpty" in options ? options.defaultArrayEmpty : false;
+  const defaultDateEmpty =
+    "defaultDateEmpty" in options ? options.defaultDateEmpty : false;
+  const defaultDateUndefined =
+    "defaultDateUndefined" in options ? options.defaultDateUndefined : false;
+  const defaultDateNull =
+    "defaultDateNull" in options ? options.defaultDateNull : false;
 
-    function run(): z.infer<T> {
-        if (schema instanceof z.ZodEffects) {
-            if (schema.innerType() instanceof z.ZodEffects) {
-                return defaultInstance(schema.innerType(), options); // recursive ZodEffect
-            }
-            // return schema inner shape as a fresh zodObject
-            return defaultInstance(z.ZodObject.create(schema.innerType().shape), options);
-        }
-
-        if (schema instanceof z.ZodDefault) {
-            const defValues = schema._def.defaultValue();
-            const shape = schema._def.innerType._def.shape;
-
-            const temp = Object.entries(shape).map(([key, value]) => {
-                if (defValues[key] !== undefined) {
-                    return [key, defValues[key]];
-                } else if (value instanceof z.ZodEffects || value instanceof z.ZodDefault) {
-                    return [key, defaultInstance(value as any, options)];
-                } else {
-                    return [key, getDefaultValue(value as any)];
-                }
-            });
-
-            return {
-                ...Object.fromEntries(temp),
-                ...defValues,
-            };
-        }
-
-        if (schema instanceof z.ZodType) {
-            const the_shape = schema.shape as z.ZodAny; // eliminates 'undefined' issue
-            const entries = Object.entries(the_shape);
-            const temp = entries.map(([key, value]) => {
-                const this_default =
-                    value instanceof z.ZodEffects ? defaultInstance(value, options) : getDefaultValue(value);
-                return [key, this_default];
-            });
-            return Object.fromEntries(temp);
-        } else {
-            console.error(`Error: Unable to process this schema`);
-            return null; // unknown or undefined here results in complications
-        }
-
-        function getDefaultValue(dschema: z.ZodTypeAny): any {
-            if (dschema instanceof z.ZodDefault) {
-                if (!("_def" in dschema)) return undefined; // error
-                if (!("defaultValue" in dschema._def)) return undefined; // error
-                return dschema._def.defaultValue();
-            }
-            if (dschema instanceof z.ZodArray) {
-                if (!("_def" in dschema)) return undefined; // error
-                if (!("type" in dschema._def)) return undefined; // error
-                // return empty array or array with one empty typed element
-                return defaultArrayEmpty ? [] : [getDefaultValue(dschema._def.type as z.ZodAny)];
-            }
-            if (dschema instanceof z.ZodString) return "";
-            if (dschema instanceof z.ZodNumber || dschema instanceof z.ZodBigInt) {
-                return dschema.minValue ?? 0;
-            }
-            if (dschema instanceof z.ZodDate) {
-                return defaultDateEmpty
-                    ? ""
-                    : defaultDateNull
-                      ? null
-                      : defaultDateUndefined
-                        ? undefined
-                        : (dschema as z.ZodDate).minDate;
-            }
-            if (dschema instanceof z.ZodSymbol) return "";
-            if (dschema instanceof z.ZodBoolean) return false;
-            if (dschema instanceof z.ZodNull) return null;
-            if (dschema instanceof z.ZodPipeline) {
-                if (!("out" in dschema._def)) return undefined; // error
-                return getDefaultValue(dschema._def.out);
-            }
-            if (dschema instanceof z.ZodObject) {
-                return defaultInstance(dschema, options);
-            }
-            if (dschema instanceof z.ZodAny && !("innerType" in dschema._def)) return undefined; // error?
-            return getDefaultValue(dschema._def.innerType);
-        }
+  function run(): z.infer<T> {
+    if (schema instanceof z.ZodEffects) {
+      if (schema.innerType() instanceof z.ZodEffects) {
+        return defaultInstance(schema.innerType(), options); // recursive ZodEffect
+      }
+      // return schema inner shape as a fresh zodObject
+      return defaultInstance(
+        z.ZodObject.create(schema.innerType().shape),
+        options,
+      );
     }
-    return run();
+
+    if (schema instanceof z.ZodDefault) {
+      const defValues = schema._def.defaultValue();
+      const shape = schema._def.innerType._def.shape;
+
+      const temp = Object.entries(shape).map(([key, value]) => {
+        if (defValues[key] !== undefined) {
+          return [key, defValues[key]];
+        } else if (
+          value instanceof z.ZodEffects ||
+          value instanceof z.ZodDefault
+        ) {
+          return [key, defaultInstance(value as any, options)];
+        } else {
+          return [key, getDefaultValue(value as any)];
+        }
+      });
+
+      return {
+        ...Object.fromEntries(temp),
+        ...defValues,
+      };
+    }
+
+    if (schema instanceof z.ZodType) {
+      const the_shape = schema.shape as z.ZodAny; // eliminates 'undefined' issue
+      const entries = Object.entries(the_shape);
+      const temp = entries.map(([key, value]) => {
+        const this_default =
+          value instanceof z.ZodEffects
+            ? defaultInstance(value, options)
+            : getDefaultValue(value);
+        return [key, this_default];
+      });
+      return Object.fromEntries(temp);
+    } else {
+      console.error(`Error: Unable to process this schema`);
+      return null; // unknown or undefined here results in complications
+    }
+
+    function getDefaultValue(dschema: z.ZodTypeAny): any {
+      if (dschema instanceof z.ZodDefault) {
+        if (!("_def" in dschema)) return undefined; // error
+        if (!("defaultValue" in dschema._def)) return undefined; // error
+        return dschema._def.defaultValue();
+      }
+      if (dschema instanceof z.ZodArray) {
+        if (!("_def" in dschema)) return undefined; // error
+        if (!("type" in dschema._def)) return undefined; // error
+        // return empty array or array with one empty typed element
+        return defaultArrayEmpty
+          ? []
+          : [getDefaultValue(dschema._def.type as z.ZodAny)];
+      }
+      if (dschema instanceof z.ZodString) return "";
+      if (dschema instanceof z.ZodNumber || dschema instanceof z.ZodBigInt) {
+        return dschema.minValue ?? 0;
+      }
+      if (dschema instanceof z.ZodDate) {
+        return defaultDateEmpty
+          ? ""
+          : defaultDateNull
+            ? null
+            : defaultDateUndefined
+              ? undefined
+              : (dschema as z.ZodDate).minDate;
+      }
+      if (dschema instanceof z.ZodSymbol) return "";
+      if (dschema instanceof z.ZodBoolean) return false;
+      if (dschema instanceof z.ZodNull) return null;
+      if (dschema instanceof z.ZodPipeline) {
+        if (!("out" in dschema._def)) return undefined; // error
+        return getDefaultValue(dschema._def.out);
+      }
+      if (dschema instanceof z.ZodObject) {
+        return defaultInstance(dschema, options);
+      }
+      if (dschema instanceof z.ZodAny && !("innerType" in dschema._def))
+        return undefined; // error?
+      return getDefaultValue(dschema._def.innerType);
+    }
+  }
+  return run();
 }
 
 /**
@@ -209,27 +246,32 @@ export function defaultInstance<T extends z.ZodTypeAny>(
  * }
  */
 export function handleZodError(error: unknown, res?: Response): void {
-    if (error instanceof ZodError) {
-        if (res) {
-            // handle zod validation error and expose to client
-            res.status(400).json({
-                message: "Validation error",
-                errors: error.errors,
-            });
-        } else {
-            // handle ENV validation error and log to server
-            log.info("\n 💠💠💠💠💠💠 Environment variable validation error 💠💠💠💠💠💠\n");
-            error.errors.forEach((err) => {
-                const currentPath = formatPath(err.path);
-                log.error(`* ${currentPath}  : `, `${err.message}`);
-                console.log("-------------");
-            });
-            throw createError(500, "Environment variable validation error");
-        }
+  if (error instanceof ZodError) {
+    if (res) {
+      // handle zod validation error and expose to client
+      res.status(400).json({
+        message: "Validation error",
+        errors: error.errors,
+      });
     } else {
-        log.error("An unexpected Server error occurred while Zod validating (handleZodError) 💥: \n", error as string);
-        throw createError(500, "Unexpected error", { error });
+      // handle ENV validation error and log to server
+      log.info(
+        "\n 💠💠💠💠💠💠 Environment variable validation error 💠💠💠💠💠💠\n",
+      );
+      error.errors.forEach((err) => {
+        const currentPath = formatPath(err.path);
+        log.error(`* ${currentPath}  : `, `${err.message}`);
+        console.log("-------------");
+      });
+      throw createError(500, "Environment variable validation error");
     }
+  } else {
+    log.error(
+      "An unexpected Server error occurred while Zod validating (handleZodError) 💥: \n",
+      error as string,
+    );
+    throw createError(500, "Unexpected error", { error });
+  }
 }
 
 /**
@@ -254,13 +296,16 @@ export function handleZodError(error: unknown, res?: Response): void {
  *     res.json(data);
  * }
  */
-export async function zParse<T extends AnyZodObject>(schema: T, req: Request): Promise<z.infer<T>> {
-    try {
-        return schema.parseAsync(req);
-    } catch (error) {
-        handleZodError(error);
-        return createError(500, "Unexpected error", { error });
-    }
+export async function zParse<T extends AnyZodObject>(
+  schema: T,
+  req: Request,
+): Promise<z.infer<T>> {
+  try {
+    return schema.parseAsync(req);
+  } catch (error) {
+    handleZodError(error);
+    return createError(500, "Unexpected error", { error });
+  }
 }
 
 /**
@@ -287,26 +332,28 @@ export async function zParse<T extends AnyZodObject>(schema: T, req: Request): P
  * app.post('/reset-password', validate(resetPassword), yourController);
  */
 export const validate =
-    (schema: AnyZodObject) =>
-    /**
-     * Express middleware function.
-     * @param {Request} req - The Express request object.
-     * @param {Response} res - The Express response object.
-     * @param {NextFunction} next - The Express next function.
-     * @returns {Promise<void>} A Promise that resolves when the validation is done.
-     */
-    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        try {
-            await schema.parseAsync({
-                body: req.body,
-                query: req.query,
-                params: req.params,
-            });
-            return next();
-        } catch (error) {
-            handleZodError(error, res);
-        }
-    };
+  (
+    schema: AnyZodObject,
+  ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) =>
+  /**
+   * Express middleware function.
+   * @param {Request} req - The Express request object.
+   * @param {Response} res - The Express response object.
+   * @param {NextFunction} next - The Express next function.
+   * @returns {Promise<void>} A Promise that resolves when the validation is done.
+   */
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await schema.parseAsync({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
+      return next();
+    } catch (error) {
+      handleZodError(error, res);
+    }
+  };
 
 /**
  * Formats a path array into a string representation. (from zod paths)
@@ -337,23 +384,26 @@ export const validate =
  *  // Outputs: "Validation error at user.address.street: Expected string, received number
  */
 
-export function formatPath(path: Array<string | number>) {
-    if (!Array.isArray(path) || path.length === 0) {
-        throw new Error("Path must be a non-empty array");
-    }
+export function formatPath(path: Array<string | number>): string {
+  if (!Array.isArray(path) || path.length === 0) {
+    throw new Error("Path must be a non-empty array");
+  }
 
-    return path
-        .map((element, index) => {
-            // eslint-disable-next-line unicorn/prefer-ternary
-            if (Number.isInteger(element) && index > 0 && Number.isInteger(path[index - 1])) {
-                // This is an array index, format it as such
-                return `[${element}]`;
-            } else {
-                // This is not an array index, just convert it to a string
-                return element.toString();
-            }
-        })
-        .join(".");
+  return path
+    .map((element, index) => {
+      if (
+        Number.isInteger(element) &&
+        index > 0 &&
+        Number.isInteger(path[index - 1])
+      ) {
+        // This is an array index, format it as such
+        return `[${element}]`;
+      } else {
+        // This is not an array index, just convert it to a string
+        return element.toString();
+      }
+    })
+    .join(".");
 }
 
 // Preprocess URLs to replace ${PORT} with actual port value
@@ -368,4 +418,5 @@ export function formatPath(path: Array<string | number>) {
  * const preprocessedUrl = preprocessUrl(url, port);
  * console.log(preprocessedUrl); // http://localhost:3000/api/v1
  */
-export const preprocessUrl = (url: string, port: number) => url.replace("${PORT}", port.toString());
+export const preprocessUrl = (url: string, port: number): string =>
+  url.replace("${PORT}", port.toString());
