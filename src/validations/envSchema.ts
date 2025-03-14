@@ -3,7 +3,6 @@
 
 import { z } from "zod";
 import {
-  arrayFromString,
   preprocessUrl,
   handleZodError,
   stringNonEmpty,
@@ -35,7 +34,7 @@ export const envSchema = z.object({
 
   // Environment
   NODE_ENV: z.enum(["development", "production"]).default("development"),
-  ALLOWED_ORIGINS: arrayFromString(z.string().url(), "http://localhost:3000"),
+  ALLOWED_ORIGINS: z.array(z.string().url()),
   CLIENT_URL: stringNonEmpty().url(),
 
   // Server URLs (transformed using the PORT value from process.env)

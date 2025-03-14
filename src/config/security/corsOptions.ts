@@ -22,7 +22,7 @@ export const corsOptions: CorsOptions = {
     if (!origin && !isProd) return callback(null, true);
 
     //? Allow requests from the same origin
-    if ((ENV.ALLOWED_ORIGINS as string[]).includes(origin as string)) {
+    if ((ENV.ALLOWED_ORIGINS).includes(origin as string)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
