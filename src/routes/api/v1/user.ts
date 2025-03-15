@@ -1,23 +1,137 @@
-import express, { Router } from "express";
-// import validate from "express-zod-safe";
-// import {
-//   getUser,
-//   updateUser
-// } from "@controllers/user-controller";
-// import { updateUserSchema } from "@/validations/userSchema";
-// Optionally, add a query validation schema for GET /users if available
+import { Router } from "express";
+import validate from "express-zod-safe";
+import { getUser, updateUser } from "@controllers/user-controller";
+import auth from "@/middleware/auth/passportJWTAuth";
+import { getUserSchema, updateUserSchema } from "@/validations/userSchema";
 
-const router: Router = express.Router();
+const router = Router({ mergeParams: true });
+
+// Get single user
+router.get("/:id", auth(), validate(getUserSchema), getUser);
+
+// Update user info or password
+router.patch("/:updateType", auth(), validate(updateUserSchema), updateUser);
+
+export default router;
 
 /**
  * @swagger
  * tags:
- *   name: Users
- *   description: User management and retrieval
- */
-
-/**
- * @swagger
+ *   - name: Users
+ *     description: User management and retrieval
+ *
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         email:
+ *           type: string
+ *           format: email
+ *         Name:
+ *           type: string
+ *         country:
+ *           type: string
+ *         lastLogin:
+ *           type: string
+ *           format: date-time
+ *       required:
+ *         - id
+ *         - email
+ *         - Name
+ *
+ *     UpdateUserInfo:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         lastLogin:
+ *           type: string
+ *           format: date-time
+ *         imgThumbnail:
+ *           type: string
+ *         plan:
+ *           type: string
+ *           enum:
+ *             - trial_monthly
+ *             - trial_yearly
+ *             - charged_monthly
+ *             - charged_yearly
+ *         ExpirationSubscription:
+ *           type: string
+ *           format: date-time
+ *         birthDate:
+ *           type: string
+ *           format: date-time
+ *         phoneNumber:
+ *           type: string
+ *         institution:
+ *           type: string
+ *         linkedin:
+ *           type: string
+ *         instagram:
+ *           type: string
+ *         facebook:
+ *           type: string
+ *         x:
+ *           type: string
+ *       required:
+ *         - id
+ *
+ *     UpdateUserPassword:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         password:
+ *           type: string
+ *           minLength: 8
+ *       required:
+ *         - id
+ *         - password
+ *
+ *     Error:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *
+ *   responses:
+ *     Unauthorized:
+ *       description: Unauthorized access. A valid JWT token is required.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *     NotFound:
+ *       description: Resource not found.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *     DuplicateEmail:
+ *       description: A user with the provided email already exists.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *     Forbidden:
+ *       description: You do not have permission to perform this action.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *
  * /users:
  *   post:
  *     summary: Create a user
@@ -134,13 +248,11 @@ const router: Router = express.Router();
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
  *         $ref: '#/components/responses/Forbidden'
- */
-/**
- * @swagger
+ *
  * /users/{id}:
  *   get:
- *     summary: Get a user
- *     description: Logged in users can fetch only their own user information. Only admins can fetch other users.
+ *     summary: Get a user by ID
+ *     description: Retrieve user information. Requires authentication.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -150,14 +262,19 @@ const router: Router = express.Router();
  *         required: true
  *         schema:
  *           type: string
- *         description: User id
+ *         description: User ID
  *     responses:
  *       "200":
  *         description: OK
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
@@ -165,50 +282,39 @@ const router: Router = express.Router();
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  *
+ * /users/{updateType}:
  *   patch:
- *     summary: Update a user
- *     description: Logged in users can only update their own information. Only admins can update other users.
+ *     summary: Update user information or password
+ *     description: Update user details or password. Requires authentication.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: updateType
  *         required: true
  *         schema:
  *           type: string
- *         description: User id
+ *           enum: [UpdateInfo, UpdatePassword]
+ *         description: Type of update to perform
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *                 description: must be unique
- *               password:
- *                 type: string
- *                 format: password
- *                 minLength: 8
- *                 description: At least one number and one letter
- *             example:
- *               name: fake name
- *               email: fake@example.com
- *               password: password1
+ *             oneOf:
+ *               - $ref: '#/components/schemas/UpdateUserInfo'
+ *               - $ref: '#/components/schemas/UpdateUserPassword'
  *     responses:
  *       "200":
  *         description: OK
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
- *       "400":
- *         $ref: '#/components/responses/DuplicateEmail'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: string
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *       "403":
@@ -239,9 +345,3 @@ const router: Router = express.Router();
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  */
-// router
-//   .route("/:id")
-//   .get(auth("getUsers"), getUser)
-//   .patch(auth("manageUsers"), validate(updateUserSchema), updateUser)
-
-export default router;

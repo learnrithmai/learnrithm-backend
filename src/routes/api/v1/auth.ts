@@ -50,16 +50,138 @@ export default router;
 /**
  * @swagger
  * tags:
- *   name: Auth
- *   description: Authentication
- */
-
-/**
- * @swagger
+ *   - name: Auth
+ *     description: Authentication endpoints for user registration, login, logout, token refresh, password reset and email verification.
+ *
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         email:
+ *           type: string
+ *           format: email
+ *         Name:
+ *           type: string
+ *         country:
+ *           type: string
+ *         lastLogin:
+ *           type: string
+ *           format: date-time
+ *       required:
+ *         - id
+ *         - email
+ *         - Name
+ *
+ *     AuthTokens:
+ *       type: object
+ *       properties:
+ *         access:
+ *           type: object
+ *           properties:
+ *             token:
+ *               type: string
+ *             expires:
+ *               type: string
+ *               format: date-time
+ *         refresh:
+ *           type: object
+ *           properties:
+ *             token:
+ *               type: string
+ *             expires:
+ *               type: string
+ *               format: date-time
+ *       required:
+ *         - access
+ *         - refresh
+ *
+ *     Error:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *
+ *   responses:
+ *     Unauthorized:
+ *       description: Unauthorized access. A valid JWT is required.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *     NotFound:
+ *       description: Resource not found.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *     DuplicateEmail:
+ *       description: A user with the provided email already exists.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *     Forbidden:
+ *       description: You do not have permission to perform this action.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Error'
+ *
+ *   examples:
+ *     NextLoginExample:
+ *       summary: Next.js login example
+ *       value: |
+ *         // Example usage in a Next.js application:
+ *         async function loginUser(email, password) {
+ *           const res = await fetch('/api/auth/login', {
+ *             method: 'POST',
+ *             headers: { 'Content-Type': 'application/json' },
+ *             body: JSON.stringify({ email, password }),
+ *           });
+ *           const data = await res.json();
+ *           localStorage.setItem('token', data.tokens.access.token);
+ *           return data;
+ *         }
+ *
+ *     NextAuthHeaderExample:
+ *       summary: Setting the Authorization header in Next.js
+ *       value: |
+ *         // Retrieve the token from localStorage and include it in your fetch request:
+ *         const token = localStorage.getItem('token');
+ *         const res = await fetch('/api/protected-route', {
+ *           headers: {
+ *             'Authorization': `Bearer ${token}`,
+ *             'Content-Type': 'application/json',
+ *           },
+ *         });
+ *
  * /auth/register:
  *   post:
- *     summary: Register as user
+ *     summary: Register as a new user
  *     tags: [Auth]
+ *     description: |
+ *       Create a new user account. On success, returns the user data and authentication tokens.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function registerUser(name, email, password, country) {
+ *         const res = await fetch('/api/auth/register', {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *           body: JSON.stringify({ Name: name, email, password, country }),
+ *         });
+ *         return await res.json();
+ *       }
+ *       ```
  *     requestBody:
  *       required: true
  *       content:
@@ -67,11 +189,12 @@ export default router;
  *           schema:
  *             type: object
  *             required:
- *               - name
+ *               - Name
  *               - email
  *               - password
+ *               - country
  *             properties:
- *               name:
+ *               Name:
  *                 type: string
  *               email:
  *                 type: string
@@ -80,15 +203,18 @@ export default router;
  *               password:
  *                 type: string
  *                 format: password
- *                 minLength: 8
- *                 description: At least one number and one letter
+ *                 minLength: 6
+ *                 description: At least 6 characters
+ *               country:
+ *                 type: string
  *             example:
- *               name: fake name
+ *               Name: fake name
  *               email: fake@example.com
  *               password: password1
+ *               country: US
  *     responses:
  *       "201":
- *         description: Created
+ *         description: Created - returns user and tokens
  *         content:
  *           application/json:
  *             schema:
@@ -101,11 +227,26 @@ export default router;
  *       "400":
  *         $ref: '#/components/responses/DuplicateEmail'
  *
- * @swagger
  * /auth/login:
  *   post:
- *     summary: Login
+ *     summary: Login and retrieve auth tokens
  *     tags: [Auth]
+ *     description: |
+ *       Authenticate a user with email and password. On success, returns user data and JWT tokens.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function loginUser(email, password) {
+ *         const res = await fetch('/api/auth/login', {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *           body: JSON.stringify({ email, password }),
+ *         });
+ *         const data = await res.json();
+ *         localStorage.setItem('token', data.tokens.access.token);
+ *         return data;
+ *       }
+ *       ```
  *     requestBody:
  *       required: true
  *       content:
@@ -127,7 +268,7 @@ export default router;
  *               password: password1
  *     responses:
  *       "200":
- *         description: OK
+ *         description: OK - returns user and tokens
  *         content:
  *           application/json:
  *             schema:
@@ -144,11 +285,25 @@ export default router;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *
- * @swagger
  * /auth/logout:
  *   post:
- *     summary: Logout
+ *     summary: Logout the current user
  *     tags: [Auth]
+ *     description: |
+ *       Log out a user by invalidating the refresh token.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function logoutUser(refreshToken) {
+ *         const res = await fetch('/api/auth/logout', {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *           body: JSON.stringify({ refreshToken }),
+ *         });
+ *         if (res.status === 204) localStorage.removeItem('token');
+ *         return res;
+ *       }
+ *       ```
  *     requestBody:
  *       required: true
  *       content:
@@ -168,11 +323,24 @@ export default router;
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  *
- * @swagger
  * /auth/refresh-tokens:
  *   post:
- *     summary: Refresh auth tokens
+ *     summary: Refresh authentication tokens
  *     tags: [Auth]
+ *     description: |
+ *       Request a new access token using a valid refresh token.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function refreshAuthTokens(refreshToken) {
+ *         const res = await fetch('/api/auth/refresh-tokens', {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *           body: JSON.stringify({ refreshToken }),
+ *         });
+ *         return await res.json();
+ *       }
+ *       ```
  *     requestBody:
  *       required: true
  *       content:
@@ -188,7 +356,7 @@ export default router;
  *               refreshToken: <your_refresh_token_here>
  *     responses:
  *       "200":
- *         description: OK
+ *         description: OK - returns new auth tokens
  *         content:
  *           application/json:
  *             schema:
@@ -196,12 +364,24 @@ export default router;
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *
- * @swagger
  * /auth/forgot-password:
  *   post:
- *     summary: Forgot password
- *     description: An email will be sent to reset password.
+ *     summary: Forgot password - send reset instructions
  *     tags: [Auth]
+ *     description: |
+ *       Sends a reset password email if the provided email exists.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function sendResetEmail(email) {
+ *         const res = await fetch('/api/auth/forgot-password', {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *           body: JSON.stringify({ email }),
+ *         });
+ *         return await res.json();
+ *       }
+ *       ```
  *     requestBody:
  *       required: true
  *       content:
@@ -218,15 +398,28 @@ export default router;
  *               email: fake@example.com
  *     responses:
  *       "204":
- *         description: No content
+ *         description: No content - check your email for further instructions
  *       "404":
  *         $ref: '#/components/responses/NotFound'
  *
- * @swagger
  * /auth/reset-password:
  *   post:
- *     summary: Reset password
+ *     summary: Reset password using token
  *     tags: [Auth]
+ *     description: |
+ *       Resets the user's password. The reset token is passed as a query parameter.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function resetPassword(newPassword, token) {
+ *         const res = await fetch(`/api/auth/reset-password?token=${token}`, {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *           body: JSON.stringify({ password: newPassword }),
+ *         });
+ *         return res.status;
+ *       }
+ *       ```
  *     parameters:
  *       - in: query
  *         name: token
@@ -246,8 +439,8 @@ export default router;
  *               password:
  *                 type: string
  *                 format: password
- *                 minLength: 8
- *                 description: At least one number and one letter
+ *                 minLength: 6
+ *                 description: At least 6 characters
  *             example:
  *               password: password1
  *     responses:
@@ -260,12 +453,27 @@ export default router;
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *
- * @swagger
  * /auth/send-verification-email:
  *   post:
  *     summary: Send verification email
- *     description: An email will be sent to verify the user's email address.
  *     tags: [Auth]
+ *     description: |
+ *       Sends an email to verify the user's email address. Requires an authenticated user.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function sendVerificationEmail() {
+ *         const token = localStorage.getItem('token');
+ *         const res = await fetch('/api/auth/send-verification-email', {
+ *           method: 'POST',
+ *           headers: {
+ *             'Content-Type': 'application/json',
+ *             'Authorization': `Bearer ${token}`,
+ *           },
+ *         });
+ *         return res.status;
+ *       }
+ *       ```
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -274,11 +482,23 @@ export default router;
  *       "401":
  *         $ref: '#/components/responses/Unauthorized'
  *
- * @swagger
  * /auth/verify-email:
  *   post:
- *     summary: Verify email
+ *     summary: Verify email address
  *     tags: [Auth]
+ *     description: |
+ *       Verifies the user's email using a token provided as a query parameter.
+ *       Example (Next.js):
+ *
+ *       ```js
+ *       async function verifyEmail(token) {
+ *         const res = await fetch(`/api/auth/verify-email?token=${token}`, {
+ *           method: 'POST',
+ *           headers: { 'Content-Type': 'application/json' },
+ *         });
+ *         return res.status;
+ *       }
+ *       ```
  *     parameters:
  *       - in: query
  *         name: token

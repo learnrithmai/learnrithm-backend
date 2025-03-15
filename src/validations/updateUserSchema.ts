@@ -30,16 +30,6 @@ const updateInfoBodySchema = baseUpdateSchema
       (arg) => (arg ? new Date(arg as string) : undefined),
       z.date().optional(),
     ),
-    birthDate: z.preprocess(
-      (arg) => (arg ? new Date(arg as string) : undefined),
-      z.date().optional(),
-    ),
-    phoneNumber: z.string().optional(),
-    institution: z.string().optional(),
-    linkedin: z.string().optional(),
-    instagram: z.string().optional(),
-    facebook: z.string().optional(),
-    x: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -49,14 +39,7 @@ const updateInfoBodySchema = baseUpdateSchema
         data.lastLogin !== undefined ||
         data.imgThumbnail !== undefined ||
         data.plan !== undefined ||
-        data.ExpirationSubscription !== undefined ||
-        data.birthDate !== undefined ||
-        data.phoneNumber !== undefined ||
-        data.institution !== undefined ||
-        data.linkedin !== undefined ||
-        data.instagram !== undefined ||
-        data.facebook !== undefined ||
-        data.x !== undefined;
+        data.ExpirationSubscription !== undefined;
       if (!hasUpdate) return false;
       // If a plan is provided, then ExpirationSubscription must be provided.
       if (data.plan && !data.ExpirationSubscription) return false;
@@ -80,22 +63,9 @@ const updatePasswordBodySchema = baseUpdateSchema.extend({
 // ────────────────────────────────────────────────────────────────
 // Exported Update User Schema
 // ────────────────────────────────────────────────────────────────
-// The updateUserSchema defines validation for both params and body.
-// Params: updateType must be either "UpdateInfo" or "UpdatePassword".
-// Body: Must conform to either updateInfoBodySchema or updatePasswordBodySchema.
-export const getUserSchema = {
-  params: z.object({
-    id: z.string({ required_error: "User ID is required" }),
-  }),
-};
-
+// This schema is an object with a "body" property that is a union of the two possibilities.
 export const updateUserSchema = {
-  params: z.object({
-    updateType: z.enum(["UpdateInfo", "UpdatePassword"]),
-  }),
   body: z.union([updateInfoBodySchema, updatePasswordBodySchema]),
 };
 
-export type GetUserParams = z.infer<typeof getUserSchema.params>;
-export type UpdateUserParams = z.infer<typeof updateUserSchema.params>;
 export type UpdateUserBody = z.infer<typeof updateUserSchema.body>;
