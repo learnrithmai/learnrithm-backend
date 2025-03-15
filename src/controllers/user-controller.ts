@@ -89,11 +89,9 @@ export const updateUser = async (
 
       // If plan is provided, then ExpirationSubscription must be provided as well
       if (plan && !ExpirationSubscription) {
-        res
-          .status(400)
-          .json({
-            errorMsg: "Expiration Subscription is required when updating plan",
-          });
+        res.status(400).json({
+          errorMsg: "Expiration Subscription is required when updating plan",
+        });
         return;
       }
 
