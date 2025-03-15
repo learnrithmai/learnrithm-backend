@@ -5,7 +5,11 @@ import prisma from "@/config/db/prisma";
 /**
  * Get a single user by ID.
  */
-export const getUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -31,7 +35,11 @@ export const getUser = async (req: Request, res: Response, next: NextFunction): 
  * Update an existing user.
  * Updates the User record and, if provided, the password in the UserAuth record.
  */
-export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { updateType } = req.params;
     // Update By Type
@@ -59,14 +67,22 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       }
 
       // Check if there is any data to update
-      if (!name && !lastLogin && !imgThumbnail && !plan && !ExpirationSubscription) {
+      if (
+        !name &&
+        !lastLogin &&
+        !imgThumbnail &&
+        !plan &&
+        !ExpirationSubscription
+      ) {
         res.status(400).json({ errorMsg: "No data to update" });
         return;
       }
 
       // Check the plan with Expiration date
       if (plan && !ExpirationSubscription) {
-        res.status(400).json({ errorMsg: "Expiration Subscription is required" });
+        res
+          .status(400)
+          .json({ errorMsg: "Expiration Subscription is required" });
         return;
       }
 

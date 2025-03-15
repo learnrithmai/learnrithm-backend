@@ -15,15 +15,20 @@ const updateInfoBodySchema = baseUpdateSchema
     name: z.string().optional(),
     lastLogin: z.preprocess(
       (arg) => (arg ? new Date(arg as string) : undefined),
-      z.date().optional()
+      z.date().optional(),
     ),
     imgThumbnail: z.string().optional(),
     plan: z
-      .enum(["trial_monthly", "trial_yearly", "charged_monthly", "charged_yearly"])
+      .enum([
+        "trial_monthly",
+        "trial_yearly",
+        "charged_monthly",
+        "charged_yearly",
+      ])
       .optional(),
     ExpirationSubscription: z.preprocess(
       (arg) => (arg ? new Date(arg as string) : undefined),
-      z.date().optional()
+      z.date().optional(),
     ),
   })
   .refine(
@@ -43,14 +48,16 @@ const updateInfoBodySchema = baseUpdateSchema
     {
       message:
         "At least one field to update is required. If a plan is provided, ExpirationSubscription is required.",
-    }
+    },
   );
 
 // ────────────────────────────────────────────────────────────────
 // Update Password Schema
 // ────────────────────────────────────────────────────────────────
 const updatePasswordBodySchema = baseUpdateSchema.extend({
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters" }),
 });
 
 // ────────────────────────────────────────────────────────────────

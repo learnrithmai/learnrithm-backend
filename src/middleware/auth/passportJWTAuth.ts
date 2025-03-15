@@ -5,9 +5,9 @@ import { Request, Response, NextFunction } from "express";
 // Removed roleRights import because roles are no longer used.
 
 declare global {
-    export interface User {
-        id: string;
-    }
+  export interface User {
+    id: string;
+  }
 }
 
 /**
@@ -22,19 +22,19 @@ declare global {
  * passport.authenticate("jwt", { session: false }, verifyCallback(req, resolve, reject))(req, res, next);
  */
 const verifyCallback =
-    (
-        req: Request,
-        resolve: (value?: unknown) => void,
-        reject: (reason?: Error) => void
-    ): AuthenticateCallback =>
-        async (err, user, info): Promise<void> => {
-            if (err || info || !user) {
-                return reject(createHttpError.Unauthorized("Please authenticate"));
-            }
+  (
+    req: Request,
+    resolve: (value?: unknown) => void,
+    reject: (reason?: Error) => void,
+  ): AuthenticateCallback =>
+  async (err, user, info): Promise<void> => {
+    if (err || info || !user) {
+      return reject(createHttpError.Unauthorized("Please authenticate"));
+    }
 
-            // Only check that a user exists.
-            resolve();
-        };
+    // Only check that a user exists.
+    resolve();
+  };
 
 /**
  * Middleware to authenticate users based on JWT.
@@ -47,17 +47,17 @@ const verifyCallback =
  * });
  */
 const auth =
-    (): ((req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-        async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-            return new Promise((resolve, reject) => {
-                passport.authenticate("jwt", { session: false }, verifyCallback(req, resolve, reject))(
-                    req,
-                    res,
-                    next
-                );
-            })
-                .then(() => next())
-                .catch((error: unknown) => next(error));
-        };
+  (): ((req: Request, res: Response, next: NextFunction) => Promise<void>) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      passport.authenticate(
+        "jwt",
+        { session: false },
+        verifyCallback(req, resolve, reject),
+      )(req, res, next);
+    })
+      .then(() => next())
+      .catch((error: unknown) => next(error));
+  };
 
 export default auth;

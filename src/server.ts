@@ -2,7 +2,7 @@ import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
 import path, { join } from "node:path";
 import passport from "passport";
-import { swaggerOptions } from './config/swagger-docs/swaggerConfig';
+import { swaggerOptions } from "./config/swagger-docs/swaggerConfig";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 import helmet from "helmet";
@@ -21,7 +21,10 @@ import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
 import apiV1Routes from "@routes/api/v1";
 import { errorHandler } from "./middleware/errorHandler";
-import { morganErrorHandler, morganSuccessHandler } from "./config/logging/morganConfig";
+import {
+  morganErrorHandler,
+  morganSuccessHandler,
+} from "./config/logging/morganConfig";
 
 dotenv.config();
 
@@ -29,7 +32,7 @@ const app: Application = express();
 
 // Trust Proxy for Proxies (Heroku, Render.com, Docker behind Nginx, etc)
 // https://stackoverflow.com/questions/40459511/in-express-js-req-protocol-is-not-picking-up-https-for-my-secure-link-it-alwa
-app.set("trust proxy", true)
+app.set("trust proxy", true);
 
 // Set security HTTP headers
 app.use(helmet(helmetOptions));
@@ -46,7 +49,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(morgan("dev"));
 
 //* 2. morgan logger with winston
- app.use(morganSuccessHandler);
+app.use(morganSuccessHandler);
 app.use(morganErrorHandler);
 
 // Handle options credentials check - before CORS!
