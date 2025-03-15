@@ -1,7 +1,7 @@
 import { transporter } from "@/config/email/nodemailConfig";
 import logger from "@/utils/chalkLogger";
 import { ENV } from "@/validations/envSchema";
-import { UserInfo } from "@prisma/client";
+import { User } from "@prisma/client";
 import { format } from "date-fns";
 import { SendMailOptions } from "nodemailer";
 import { Attachment } from "nodemailer/lib/mailer";
@@ -34,22 +34,22 @@ export const sendEmail = async (
 
 /**
  * Send reset password email
- * @param {UserInfo} user
+ * @param {User} user
  * @param {string} token
  * @returns {Promise<void>}
  */
 export const sendResetPasswordEmail = async (
-  user: UserInfo,
+  user: User,
   token: string,
 ): Promise<void> => {
   const subject = "Reset password";
   const resetPasswordUrl = `${ENV.CLIENT_URL}/reset-password?token=${token}`;
   const body = `<img src="cid:logo.png" alt="logo"/>
-		<h1>Hey ${user.Name}!</h1>
-		<p>You are receiving this because you (or someone else) have requested the <strong>reset of the password</strong> for your account.</p>
-		<p>Please click on the following link, or paste this into your browser to complete the process:</p>
-		<a href="${resetPasswordUrl}">Reset password</a>
-		<p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`;
+    <h1>Hey ${user.Name}!</h1>
+    <p>You are receiving this because you (or someone else) have requested the <strong>reset of the password</strong> for your account.</p>
+    <p>Please click on the following link, or paste this into your browser to complete the process:</p>
+    <a href="${resetPasswordUrl}">Reset password</a>
+    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`;
   const attachments: Attachment[] = [
     {
       filename: "logo.svg",
@@ -76,17 +76,17 @@ export const sendResetPasswordEmail = async (
 
 /**
  * Send successful reset password email
- * @param {UserInfo} user
+ * @param {User} user
  * @returns {Promise<void>}
  */
 export const sendSuccessResetPasswordEmail = async (
-  user: UserInfo,
+  user: User,
 ): Promise<void> => {
   const subject = "Password Reset Successfully";
   const body = `<img src="cid:logo.png" alt="logo"/>
-        <h1>Hey ${user.Name}!</h1>
-        <p>This is a confirmation that the password for your account ${user.email} has been successfully reset.</p>
-        <p>If you did not request this, please contact us immediately.</p>`;
+      <h1>Hey ${user.Name}!</h1>
+      <p>This is a confirmation that the password for your account ${user.email} has been successfully reset.</p>
+      <p>If you did not request this, please contact us immediately.</p>`;
 
   const attachments: Attachment[] = [
     {
@@ -115,12 +115,12 @@ export const sendSuccessResetPasswordEmail = async (
 
 /**
  * Send verification email
- * @param {UserInfo} user
+ * @param {User} user
  * @param {string} token
  * @returns {Promise<void>}
  */
 export const sendVerificationEmail = async (
-  user: UserInfo,
+  user: User,
   token: string,
 ): Promise<void> => {
   const subject = "Email Verification";

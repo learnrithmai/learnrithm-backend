@@ -25,7 +25,7 @@ export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
 
 export const loginSchema = {
   body: z.object({
-    identifier: z.string().min(1, { message: "Identifier is required" }),
+    email: z.string().min(1, { message: "Identifier is required" }),
     password: z
       .string()
       .min(6, { message: "Password must be at least 6 characters" }),

@@ -33,7 +33,9 @@ export const getUser = async (
 
 /**
  * Update an existing user.
- * Updates the User record and, if provided, the password in the UserAuth record.
+ * Supports two update types:
+ *   - "UpdateInfo": Update general user information.
+ *   - "UpdatePassword": Update the user's password.
  */
 export const updateUser = async (
   req: Request,
@@ -42,14 +44,14 @@ export const updateUser = async (
 ): Promise<void> => {
   try {
     const { updateType } = req.params;
-    // Update By Type
+
     if (updateType === "UpdateInfo") {
       const {
+        id,
         name,
         lastLogin,
         imgThumbnail,
         plan,
-        id,
         ExpirationSubscription,
         birthDate,
         phoneNumber,
@@ -60,33 +62,40 @@ export const updateUser = async (
         x,
       } = req.body;
 
-      // Check if the user ID is provided
+      // Validate that the user ID is provided
       if (!id) {
         res.status(400).json({ errorMsg: "User ID is required" });
         return;
       }
 
-      // Check if there is any data to update
+      // Check if there's data to update
       if (
         !name &&
         !lastLogin &&
         !imgThumbnail &&
         !plan &&
-        !ExpirationSubscription
+        !ExpirationSubscription &&
+        !birthDate &&
+        !phoneNumber &&
+        !institution &&
+        !linkedin &&
+        !instagram &&
+        !facebook &&
+        !x
       ) {
         res.status(400).json({ errorMsg: "No data to update" });
         return;
       }
 
-      // Check the plan with Expiration date
+      // If plan is provided, then ExpirationSubscription must be provided as well
       if (plan && !ExpirationSubscription) {
         res
           .status(400)
-          .json({ errorMsg: "Expiration Subscription is required" });
+          .json({ errorMsg: "Expiration Subscription is required when updating plan" });
         return;
       }
 
-      // Check if the user exists in the User model
+      // Verify the user exists
       const user = await prisma.user.findUnique({
         where: { id },
       });
@@ -95,91 +104,62 @@ export const updateUser = async (
         return;
       }
 
-      if (plan || imgThumbnail || name) {
-        // Update the User record
-        await prisma.userInfo.update({
-          where: { id },
-          data: {
-            Name: name,
-            lastLogin,
-            imgThumbnail,
-            plan,
-          },
-        });
-
-        await prisma.userDetails.update({
-          where: { id },
-          data: {
-            Name: name,
-            lastLogin,
-            imgThumbnail,
-            plan,
-            ExpirationSubscription,
-            phoneNumber,
-            birthDate,
-            institution,
-            linkedin,
-            instagram,
-            facebook,
-            x,
-          },
-        });
-      } else {
-        await prisma.userDetails.update({
-          where: { id },
-          data: {
-            ExpirationSubscription,
-            phoneNumber,
-            birthDate,
-            institution,
-            linkedin,
-            instagram,
-            facebook,
-            x,
-          },
-        });
-      }
+      // Update the merged user record
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          Name: name ?? user.Name,
+          lastLogin: lastLogin ?? user.lastLogin,
+          imgThumbnail: imgThumbnail ?? user.imgThumbnail,
+          plan: plan ?? user.plan,
+          ExpirationSubscription: ExpirationSubscription ?? user.ExpirationSubscription,
+          birthDate: birthDate ?? user.birthDate,
+          phoneNumber: phoneNumber ?? user.phoneNumber,
+          institution: institution ?? user.institution,
+          linkedin: linkedin ?? user.linkedin,
+          instagram: instagram ?? user.instagram,
+          facebook: facebook ?? user.facebook,
+          x: x ?? user.x,
+        },
+      });
 
       res.status(200).json({
-        success: `User ${user.email} updated successfully`,
+        success: `User ${updatedUser.email} updated successfully`,
+        user: updatedUser,
       });
     } else if (updateType === "UpdatePassword") {
       const { id, password } = req.body;
 
-      // Check if the user ID is provided
+      // Validate input
       if (!id) {
         res.status(400).json({ errorMsg: "User ID is required" });
         return;
       }
-
-      // Check if the password is provided
       if (!password) {
         res.status(400).json({ errorMsg: "Password is required" });
         return;
       }
 
-      // Check if the user exists in the UserAuth model
-      const userCredentials = await prisma.user.findUnique({
+      // Verify the user exists
+      const user = await prisma.user.findUnique({
         where: { id },
       });
-      if (!userCredentials) {
+      if (!user) {
         res.status(404).json({ errorMsg: "User not found" });
         return;
       }
 
-      // Hash the password
+      // Hash the new password
       const hashedPassword = await hash(password, 10);
 
-      // Update the UserAuth record
-      const updatedUserCredentials = await prisma.user.update({
+      // Update the password field in the merged user model
+      const updatedUser = await prisma.user.update({
         where: { id },
-        data: {
-          password: hashedPassword,
-        },
+        data: { password: hashedPassword },
       });
 
       res.status(200).json({
-        success: `User ${updatedUserCredentials.email} password updated successfully`,
+        success: `User ${updatedUser.email} password updated successfully`,
       });
     }
   } catch (error) {

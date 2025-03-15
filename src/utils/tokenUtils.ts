@@ -1,9 +1,16 @@
 import prisma from "@/config/db/prisma";
 import { ENV } from "@/validations/envSchema";
-import { Token, TokenType, User } from "@prisma/client";
+import { Token, TokenType } from "@prisma/client";
 import { addDays, addMinutes, getUnixTime } from "date-fns";
 import createHttpError from "http-errors";
 import jwt, { JwtPayload } from "jsonwebtoken";
+
+type User = {
+  id: string,
+  email: string,
+  password: string,
+  createdAt: Date | null
+}
 
 // Type guard to check if data is of type User
 function isUser(data: {

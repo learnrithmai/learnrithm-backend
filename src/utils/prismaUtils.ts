@@ -17,7 +17,7 @@ export async function isEmailTaken(
 }
 
 export async function getUserFullName(userId: string): Promise<string> {
-  const user = await prisma.userInfo.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
   });
   if (!user) {

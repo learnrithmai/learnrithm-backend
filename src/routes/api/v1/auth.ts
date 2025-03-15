@@ -69,17 +69,51 @@ export default router;
  *         email:
  *           type: string
  *           format: email
+ *         isVerified:
+ *           type: boolean
  *         Name:
  *           type: string
+ *         birthDate:
+ *           type: string
+ *           format: date-time
  *         country:
  *           type: string
  *         lastLogin:
  *           type: string
  *           format: date-time
+ *         institution:
+ *           type: string
+ *         phoneNumber:
+ *           type: string
+ *         linkedin:
+ *           type: string
+ *         instagram:
+ *           type: string
+ *         facebook:
+ *           type: string
+ *         x:
+ *           type: string
+ *         imgThumbnail:
+ *           type: string
+ *         plan:
+ *           type: string
+ *           enum:
+ *             - trial_monthly
+ *             - trial_yearly
+ *             - charged_monthly
+ *             - charged_yearly
+ *         ExpirationSubscription:
+ *           type: string
+ *           format: date-time
+ *         createdAt:
+ *           type: string
+ *           format: date-time
  *       required:
  *         - id
  *         - email
+ *         - isVerified
  *         - Name
+ *         - country
  *
  *     AuthTokens:
  *       type: object
@@ -177,7 +211,21 @@ export default router;
  *         const res = await fetch('/api/auth/register', {
  *           method: 'POST',
  *           headers: { 'Content-Type': 'application/json' },
- *           body: JSON.stringify({ Name: name, email, password, country }),
+ *           body: JSON.stringify({
+ *             Name: name,
+ *             email,
+ *             password,
+ *             country,
+ *             // Optional fields:
+ *             birthDate: "2000-01-01T00:00:00.000Z",
+ *             institution: "",
+ *             phoneNumber: "",
+ *             linkedin: "",
+ *             instagram: "",
+ *             facebook: "",
+ *             x: "",
+ *             imgThumbnail: ""
+ *           }),
  *         });
  *         return await res.json();
  *       }
@@ -207,11 +255,29 @@ export default router;
  *                 description: At least 6 characters
  *               country:
  *                 type: string
+ *               birthDate:
+ *                 type: string
+ *                 format: date-time
+ *               institution:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *               linkedin:
+ *                 type: string
+ *               instagram:
+ *                 type: string
+ *               facebook:
+ *                 type: string
+ *               x:
+ *                 type: string
+ *               imgThumbnail:
+ *                 type: string
  *             example:
  *               Name: fake name
  *               email: fake@example.com
  *               password: password1
  *               country: US
+ *               birthDate: 2000-01-01T00:00:00.000Z
  *     responses:
  *       "201":
  *         description: Created - returns user and tokens

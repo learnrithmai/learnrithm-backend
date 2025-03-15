@@ -36,28 +36,30 @@ export default router;
  *         email:
  *           type: string
  *           format: email
+ *         isVerified:
+ *           type: boolean
  *         Name:
  *           type: string
+ *         birthDate:
+ *           type: string
+ *           format: date-time
  *         country:
  *           type: string
  *         lastLogin:
  *           type: string
  *           format: date-time
- *       required:
- *         - id
- *         - email
- *         - Name
- *
- *     UpdateUserInfo:
- *       type: object
- *       properties:
- *         id:
+ *         institution:
  *           type: string
- *         name:
+ *         phoneNumber:
  *           type: string
- *         lastLogin:
+ *         linkedin:
  *           type: string
- *           format: date-time
+ *         instagram:
+ *           type: string
+ *         facebook:
+ *           type: string
+ *         x:
+ *           type: string
  *         imgThumbnail:
  *           type: string
  *         plan:
@@ -70,12 +72,33 @@ export default router;
  *         ExpirationSubscription:
  *           type: string
  *           format: date-time
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *       required:
+ *         - id
+ *         - email
+ *         - Name
+ *         - country
+ *
+ *     UpdateUserInfo:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
  *         birthDate:
  *           type: string
  *           format: date-time
- *         phoneNumber:
+ *         country:
  *           type: string
+ *         lastLogin:
+ *           type: string
+ *           format: date-time
  *         institution:
+ *           type: string
+ *         phoneNumber:
  *           type: string
  *         linkedin:
  *           type: string
@@ -85,6 +108,18 @@ export default router;
  *           type: string
  *         x:
  *           type: string
+ *         imgThumbnail:
+ *           type: string
+ *         plan:
+ *           type: string
+ *           enum:
+ *             - trial_monthly
+ *             - trial_yearly
+ *             - charged_monthly
+ *             - charged_yearly
+ *         ExpirationSubscription:
+ *           type: string
+ *           format: date-time
  *       required:
  *         - id
  *

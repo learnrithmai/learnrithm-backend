@@ -50,11 +50,12 @@ export const registerUser = async (
   }
 
   const normalizedEmail = typeof email === "string" ? email.toLowerCase() : "";
-  // Check if credentials already exist
-  const existingAuth = await prisma.user.findUnique({
+
+  // Check if a user with the same email already exists
+  const existingUser = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
-  if (existingAuth) {
+  if (existingUser) {
     res.status(409).json({ errorMsg: "User already exists" });
     return;
   }
@@ -62,41 +63,23 @@ export const registerUser = async (
   // Hash password
   const hashedPassword = await bcrypt.hash(password as string, 10);
 
-  // Create credentials in user model
-  const userAuth = await prisma.user.create({
+  // Create new user in the merged User model
+  const newUser = await prisma.user.create({
     data: {
       email: normalizedEmail,
       password: hashedPassword,
+      Name,
+      country: country as string,
+      lastLogin: new Date(),
     },
   });
 
-  if (!userAuth) {
+  if (!newUser) {
     res.status(500).json({ errorMsg: "User creation failed" });
     return;
   }
 
-  // Create user profile in User model (using userAuth.id as unique identifier)
-  const newUser = await prisma.userDetails.create({
-    data: {
-      userId: userAuth.id,
-      email: normalizedEmail,
-      Name,
-      lastLogin: new Date(),
-      country: country as string,
-    },
-  });
-
-  // Create extended user info in UserInfo model
-  await prisma.userInfo.create({
-    data: {
-      userId: userAuth.id,
-      email: normalizedEmail,
-      Name,
-      lastLogin: new Date(),
-    },
-  });
-
-  // (Assumes that models for referralCode and referrer exist.)
+  // Process referral if provided (assuming referral models remain unchanged)
   if (referralCode) {
     const referrer = await prisma.referralCode.findUnique({
       where: { code: referralCode as string },
@@ -104,7 +87,7 @@ export const registerUser = async (
     if (referrer) {
       await prisma.userReferredBy.create({
         data: {
-          userId: userAuth.id,
+          userId: newUser.id,
           referredUserId: referrer.userId,
           email: normalizedEmail,
           referredUserEmail: referrer.email,
@@ -128,30 +111,22 @@ export const registerUser = async (
 // ────────────────────────────────────────────────────────────────
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { identifier, password } = req.body as LoginBody;
-  const normalizedIdentifier = identifier.toLowerCase();
+  const { email, password } = req.body as LoginBody;
+  const normalizedIdentifier = email.toLowerCase();
 
-  // Find user credentials by email
-  const userAuth = await prisma.user.findUnique({
+  // Find user by email
+  const user = await prisma.user.findUnique({
     where: { email: normalizedIdentifier },
   });
-  if (!userAuth) {
+
+  if (!user) {
     res.status(404).json({ error: "User with that email not found" });
     return;
   }
 
   // Verify password match
-  if (!(await isPasswordMatch(password, userAuth.password))) {
+  if (!(await isPasswordMatch(password, user.password))) {
     res.status(401).json({ error: "Invalid password" });
-    return;
-  }
-
-  // Retrieve user profile
-  const user = await prisma.user.findUnique({
-    where: { email: normalizedIdentifier },
-  });
-  if (!user) {
-    res.status(404).json({ error: "User profile not found" });
     return;
   }
 
@@ -165,13 +140,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     getCookieOptions(tokens.refresh.expires),
   );
 
-  // get the user name from the user profile
-  const userInfo = await prisma.userInfo.findUnique({
-    where: { userId: user.id },
-  });
-
   res.send({
-    success: `Login successful: ${userInfo?.Name}!`,
+    success: `Login successful: ${user.Name}!`,
     user,
     accessToken: tokens.access,
   });
@@ -273,18 +243,10 @@ export const forgotPassword = async (
     return;
   }
 
-  // Generate reset token and send email
+  // Generate reset token and send email using the merged user model
   const resetPasswordToken = await generateResetPasswordToken(user);
-  const userInfo = await prisma.userInfo.findUnique({
-    where: { userId: user.id },
-  });
 
-  if (!userInfo) {
-    res.status(404).json({ error: "User info not found" });
-    return;
-  }
-
-  await sendResetPasswordEmail(userInfo, resetPasswordToken);
+  await sendResetPasswordEmail(user, resetPasswordToken);
   res
     .status(200)
     .json({ message: "Check your email for further instructions" });
@@ -323,7 +285,7 @@ export const resetPassword = async (
 
   const hashedPassword = await bcrypt.hash(newPassword, 8);
 
-  // Update password in UserAuth
+  // Update password in the merged User model
   await prisma.user.update({
     where: { id: user.id },
     data: { password: hashedPassword },
@@ -335,16 +297,7 @@ export const resetPassword = async (
     },
   });
 
-  const userInfo = await prisma.userInfo.findUnique({
-    where: { userId: user.id },
-  });
-
-  if (!userInfo) {
-    res.status(404).json({ error: "User info not found" });
-    return;
-  }
-
-  await sendSuccessResetPasswordEmail(userInfo);
+  await sendSuccessResetPasswordEmail(user);
   res
     .status(200)
     .json({ message: "Your password has been changed successfully" });
@@ -358,18 +311,9 @@ export const sendVerificationEmail = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  interface UserRequest extends Request {
-    user?: {
-      email: string;
-      role: string;
-      id: string;
-      password: string;
-      createdAt: Date;
-    };
-  }
 
   const user = await prisma.user.findUnique({
-    where: { email: (req as UserRequest).user?.email },
+    where: { email: req.user?.email },
   });
   if (!user) {
     res.status(404).json({ error: "User with that email not found" });
@@ -378,26 +322,18 @@ export const sendVerificationEmail = async (
 
   const verifyEmailToken = await generateVerifyEmailToken(
     req.user as {
-      email: string;
-      role: string;
       id: string;
+      email: string;
       password: string;
-      createdAt: Date;
+      createdAt: Date | null;
     },
   );
-  const userInfo = await prisma.userInfo.findUnique({
-    where: { userId: user.id },
-  });
 
-  if (!userInfo) {
-    res.status(404).json({ error: "User info not found" });
-    return;
-  }
-
-  await sendVerificationEmailUtil(userInfo, verifyEmailToken);
+  await sendVerificationEmailUtil(user, verifyEmailToken);
   res
     .status(200)
     .json({ message: "Check your email for further instructions" });
+
 };
 
 // ────────────────────────────────────────────────────────────────
