@@ -117,6 +117,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   // Find user by email
   const user = await prisma.user.findUnique({
     where: { email: normalizedIdentifier },
+    select: {
+      id: true,
+      password: true,
+      Name: true,
+      email: true,
+      createdAt: true,
+    },
   });
 
   if (!user) {
