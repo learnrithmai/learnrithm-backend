@@ -37,14 +37,12 @@ export const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
     if (!user) {
       throw new ApiError(404, "No users found");
     }
-    await prisma.userInfo.update({
+    // Update the merged user model directly
+    await prisma.user.update({
       where: { id: user.id },
       data: { isVerified: true },
     });
-    await prisma.userDetails.update({
-      where: { id: user.id },
-      data: { isVerified: true },
-    });
+    // Delete any existing email verification tokens
     await prisma.token.deleteMany({
       where: { userId: user.id, tokenType: TokenType.email_validation },
     });
@@ -67,9 +65,9 @@ if (passCompromised) {
 export const isPasswordCompromised = async (
   password: string,
 ): Promise<boolean> => {
-  const hash = sha1(password).toUpperCase();
-  const prefix = hash.slice(0, 5);
-  const suffix = hash.slice(5);
+  const hashValue = sha1(password).toUpperCase();
+  const prefix = hashValue.slice(0, 5);
+  const suffix = hashValue.slice(5);
 
   const response = await axios.get(
     `https://api.pwnedpasswords.com/range/${prefix}`,
@@ -134,7 +132,6 @@ export const isEmailTemporayII = async (email: string): Promise<boolean> => {
  * const username = generateUsername("John", "Doe");
  * // john.doe.a1b2c3
  */
-// Function to generate a unique username
 export const generateUsername = (firstName: string, lastName: string) => {
   const hash = createHash("md5")
     .update(`${firstName}${lastName}${Date.now()}`)

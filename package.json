@@ -44,6 +44,7 @@
   "dependencies": {
     "@auth/core": "^0.37.4",
     "@auth/express": "^0.8.4",
+    "@faker-js/faker": "^9.6.0",
     "@types/pino": "^7.0.4",
     "axios": "^1.7.9",
     "bcryptjs": "^3.0.2",
@@ -87,6 +88,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/faker": "^6.6.8",
     "@types/ioredis": "^4.28.10",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.8",

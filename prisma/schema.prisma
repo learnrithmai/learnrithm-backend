@@ -18,43 +18,26 @@ generator client {
 //////////////////////////
 
 model User {
-  id                   String     @id @map("_id") @default(auto()) @db.ObjectId
-  email                String     @unique
-  password             String     // Ensure hashing before storing
-  createdAt            DateTime?  @default(now())
+  id                         String    @id @map("_id") @default(auto()) @db.ObjectId
+  email                      String    @unique
+  password                   String   
+  isVerified                 Boolean   @default(false)
+  Name                       String
+  birthDate                  DateTime?
+  country                    String
+  lastLogin                  DateTime?
+  institution                String?
+  phoneNumber                String?   
+  linkedin                   String?   
+  instagram                  String?
+  facebook                   String?
+  x                          String?
+  imgThumbnail               String?
+  plan                       planType? @default(trial_monthly)
+  ExpirationSubscription     DateTime?
+  createdAt                  DateTime? @default(now())
 }
 
-model UserInfo {
-  id                   String      @id @map("_id") @default(auto()) @db.ObjectId
-  userId               String      @unique
-  email                String      @unique
-  isVerified           Boolean     @default(false)
-  Name                 String
-  lastLogin            DateTime?
-  imgThumbnail         String?
-  plan                 planType?   @default(trial_monthly)
-  ExpirationSubscription DateTime?
-}
-
-model UserDetails {
-  id                          String    @id @map("_id") @default(auto()) @db.ObjectId
-  userId                      String    @unique 
-  email                       String?   @unique
-  isVerified                  Boolean   @default(false)
-  plan                        planType? @default(trial_monthly)
-  ExpirationSubscription      DateTime?
-  Name                        String
-  birthDate                   DateTime?
-  country                     String
-  lastLogin                   DateTime?
-  institution                 String?
-  phoneNumber                 String?   @unique
-  linkedin                    String?   @unique
-  instagram                   String?
-  facebook                    String?
-  x                           String?
-  imgThumbnail                String?
-}
 
 //////////////////////////
 //     Course Models    //
