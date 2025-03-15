@@ -311,7 +311,6 @@ export const sendVerificationEmail = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-
   const user = await prisma.user.findUnique({
     where: { email: req.user?.email },
   });
@@ -333,7 +332,6 @@ export const sendVerificationEmail = async (
   res
     .status(200)
     .json({ message: "Check your email for further instructions" });
-
 };
 
 // ────────────────────────────────────────────────────────────────

@@ -91,7 +91,9 @@ export const updateUser = async (
       if (plan && !ExpirationSubscription) {
         res
           .status(400)
-          .json({ errorMsg: "Expiration Subscription is required when updating plan" });
+          .json({
+            errorMsg: "Expiration Subscription is required when updating plan",
+          });
         return;
       }
 
@@ -112,7 +114,8 @@ export const updateUser = async (
           lastLogin: lastLogin ?? user.lastLogin,
           imgThumbnail: imgThumbnail ?? user.imgThumbnail,
           plan: plan ?? user.plan,
-          ExpirationSubscription: ExpirationSubscription ?? user.ExpirationSubscription,
+          ExpirationSubscription:
+            ExpirationSubscription ?? user.ExpirationSubscription,
           birthDate: birthDate ?? user.birthDate,
           phoneNumber: phoneNumber ?? user.phoneNumber,
           institution: institution ?? user.institution,
