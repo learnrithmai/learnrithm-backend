@@ -9,7 +9,8 @@ import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import authRouter from "./auth";
-import user from "./user";
+import userRouter from "./user";
+import chatRouter from "./chat";
 
 const router = Router();
 
@@ -22,16 +23,18 @@ if (isDev) {
     swaggerUi.serve,
     swaggerUi.setup(specs, {
       explorer: true,
-    }),
+    })
   );
   // router.use("/test", require("./test"));
 }
+
+router.use("/chat", chatRouter);
 
 //*  --------- Public routes ---------------
 router.use("/auth", authRouter);
 
 //* ---------- Protected routes ------------
-router.use("/user", user);
+router.use("/user", userRouter);
 
 router
   .route("/upload")
