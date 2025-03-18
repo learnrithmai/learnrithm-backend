@@ -30,80 +30,113 @@ import {
 import { TokenType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
+import geoip from "geoip-lite";
 
 // ────────────────────────────────────────────────────────────────
 // REGISTER USER
 // ────────────────────────────────────────────────────────────────
 
-export const registerUser = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  const { email, Name, password, country, referralCode } =
-    req.body as RegisterUserBody;
-
-  if (!email || !password || !Name || !country) {
-    res
-      .status(400)
-      .json({ errorMsg: "Email, name, password, and country are required" });
-    return;
-  }
-
-  const normalizedEmail = typeof email === "string" ? email.toLowerCase() : "";
-
-  // Check if a user with the same email already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
-  });
-  if (existingUser) {
-    res.status(409).json({ errorMsg: "User already exists" });
-    return;
-  }
-
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password as string, 10);
-
-  // Create new user in the merged User model
-  const newUser = await prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      password: hashedPassword,
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      email,
       Name,
-      country: country as string,
-      lastLogin: new Date(),
-    },
-  });
+      image,
+      password,
+      country,
+      referralCode,
+      method,
+    } = req.body as RegisterUserBody;
 
-  if (!newUser) {
-    res.status(500).json({ errorMsg: "User creation failed" });
-    return;
-  }
+    // Validate required fields
+    if (!email || !Name || !method) {
+      res.status(400).json({ errorMsg: "Email, Name, and method are required" });
+      return;
+    }
 
-  // Process referral if provided (assuming referral models remain unchanged)
-  if (referralCode) {
-    const referrer = await prisma.referralCode.findUnique({
-      where: { code: referralCode as string },
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if a user with the same email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
     });
-    if (referrer) {
-      await prisma.userReferredBy.create({
+    if (existingUser) {
+      res.status(409).json({ errorMsg: "User already exists" });
+      return;
+    }
+
+    // Get country from IP if not provided
+    let userCountry = country;
+    if (!userCountry) {
+      const userIp = req.headers["x-forwarded-for"]?.toString().split(",")[0] || req.socket.remoteAddress;
+      if (userIp) {
+        const geo = geoip.lookup(userIp);
+        userCountry = geo?.country || "Unknown";
+      }
+    }
+
+    // For normal sign-ups, ensure a password is provided and hash it
+    let hashedPassword = null;
+    if (method === "normal") {
+      if (!password) {
+        res.status(401).json({ errorMsg: "Password is required for normal registration" });
+        return;
+      }
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    // Use a transaction to ensure that user creation, token creation, and referral processing happen atomically
+    const newUser = await prisma.$transaction(async (tx) => {
+      // Create the new user record
+      const createdUser = await tx.user.create({
         data: {
-          userId: newUser.id,
-          referredUserId: referrer.userId,
           email: normalizedEmail,
-          referredUserEmail: referrer.email,
-          date: new Date(),
-          refCodeUsed: referralCode as string,
-          referringType: "sign",
-          referringSource: "signup",
+          imgThumbnail: image,
+          method,
+          password: method === "normal" ? hashedPassword : null,
+          Name,
+          country: userCountry as string,
+          lastLogin: new Date(),
         },
       });
-    }
-  }
 
-  res.status(201).json({
-    success: `User ${newUser.email} created successfully!`,
-    user: newUser,
-  });
+      // Process referral if a referral code is provided
+      if (referralCode) {
+        const referrer = await tx.referralCode.findUnique({
+          where: { code: referralCode },
+        });
+        if (referrer) {
+          await tx.userReferredBy.create({
+            data: {
+              userId: createdUser.id,
+              referredUserId: referrer.userId,
+              email: normalizedEmail,
+              referredUserEmail: referrer.email,
+              date: new Date(),
+              refCodeUsed: referralCode,
+              referringType: "sign",
+              referringSource: "signup",
+            },
+          });
+        }
+      }
+
+      return createdUser;
+    });
+
+    res.status(201).json({
+      success: `User ${newUser.email} created successfully!`,
+      user: newUser,
+    });
+    return;
+  } catch (error) {
+    console.error("Error in registerUser:", error);
+    res.status(500).json({
+      errorMsg: "User creation failed",
+      details: error instanceof Error ? error.message : error,
+    });
+    return;
+  }
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -119,6 +152,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     where: { email: normalizedIdentifier },
     select: {
       id: true,
+      method: true,
       password: true,
       Name: true,
       email: true,
@@ -126,7 +160,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     },
   });
 
-  if (!user) {
+  if (user?.method === 'google') {
+    res.status(405).json({ error: "User auth used google" });
+    return;
+  }
+
+  if (!user || !user.password) {
     res.status(404).json({ error: "User with that email not found" });
     return;
   }
@@ -138,7 +177,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 
   // Generate authentication tokens
-  const tokens = await generateAuthTokens(user);
+  const tokens = await generateAuthTokens({
+    ...user,
+    password: user.password || '',
+  });
 
   // Set secure refresh token cookie
   res.cookie(
@@ -208,11 +250,14 @@ export const refreshTokens = async (
     const user = await prisma.user.findUnique({
       where: { id: refreshTokenDoc.userId },
     });
-    if (!user) {
-      res.status(404).json({ error: "User not found with that token" });
+    if (!user || !user.password) {
+      res.status(404).json({ error: "User with that email not found" });
       return;
     }
-    const accessToken = await generateAccessToken(user);
+    const accessToken = await generateAccessToken({
+      ...user,
+      password: user.password || '',
+    });
     res.status(200).json({ success: "Access token regenerated", accessToken });
   } catch (error) {
     if ((error as Error)?.name === "TokenExpiredError") {
@@ -245,13 +290,16 @@ export const forgotPassword = async (
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
-  if (!user) {
+  if (!user || !user.password) {
     res.status(404).json({ error: "User with that email not found" });
     return;
   }
 
   // Generate reset token and send email using the merged user model
-  const resetPasswordToken = await generateResetPasswordToken(user);
+  const resetPasswordToken = await generateResetPasswordToken({
+    ...user,
+    password: user.password || '',
+  });
 
   await sendResetPasswordEmail(user, resetPasswordToken);
   res

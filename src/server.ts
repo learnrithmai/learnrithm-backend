@@ -19,7 +19,7 @@ import { jwtStrategy } from "./config/auth/passportjsConfig";
 import prisma from "./config/db/prisma";
 import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
-import apiV1Routes from "@routes/api/v1";
+import apiV1Routes from "@routes/api/v2";
 import { errorHandler } from "./middleware/errorHandler";
 import {
   morganErrorHandler,
@@ -90,15 +90,15 @@ app.use(passport.initialize());
 passport.use("jwt", jwtStrategy);
 
 // Serve static files from the "static" folder
-app.use(express.static(path.join(__dirname, "../public", "static")));
+app.use(express.static(path.join(__dirname, "../public/static")));
 
 // Default route - serve the HTML page with the image and text
 app.get("/", (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "../public", "static", "index.html"));
+  res.sendFile(path.join(__dirname, "../public/static/index.html"));
 });
 
 //APIs Consume
-app.use("/api/v1", apiV1Routes);
+app.use("/api/v2", apiV1Routes);
 
 // global error handling
 app.use(errorHandler);

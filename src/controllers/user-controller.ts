@@ -11,11 +11,12 @@ export const getUser = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { email } = req.params;
 
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: { email },
     });
+
 
     if (!user) {
       res.status(404).json({ errorMsg: "User not found" });

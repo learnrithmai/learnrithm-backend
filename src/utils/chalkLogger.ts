@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import chalk from "chalk";
 
 type LogFunction = (title: string, msg?: string) => void;

@@ -7,7 +7,7 @@ import { getUserSchema, updateUserSchema } from "@/validations/userSchema";
 const router = Router({ mergeParams: true });
 
 // Get single user
-router.get("/:id", auth(), validate(getUserSchema), getUser);
+router.get("/:email", auth(), validate(getUserSchema), getUser);
 
 // Update user info or password
 router.patch("/:updateType", auth(), validate(updateUserSchema), updateUser);

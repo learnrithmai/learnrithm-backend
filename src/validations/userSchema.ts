@@ -85,7 +85,7 @@ const updatePasswordBodySchema = baseUpdateSchema.extend({
 // Body: Must conform to either updateInfoBodySchema or updatePasswordBodySchema.
 export const getUserSchema = {
   params: z.object({
-    id: z.string({ required_error: "User ID is required" }),
+    email: z.string({ required_error: "User Email is required" }).email()
   }),
 };
 

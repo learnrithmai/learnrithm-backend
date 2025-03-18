@@ -20,7 +20,8 @@ generator client {
 model User {
   id                         String    @id @map("_id") @default(auto()) @db.ObjectId
   email                      String    @unique
-  password                   String   
+  password                   String?
+  method                     AuthType
   isVerified                 Boolean   @default(false)
   Name                       String
   birthDate                  DateTime?
@@ -198,4 +199,9 @@ enum ReferringType {
   trial_yearly
   charged_monthly
   charged_yearly
+}
+
+enum AuthType {
+  google
+  normal
 }
