@@ -17,7 +17,6 @@ export const getUser = async (
       where: { email },
     });
 
-
     if (!user) {
       res.status(404).json({ errorMsg: "User not found" });
       return;

@@ -36,21 +36,19 @@ import geoip from "geoip-lite";
 // REGISTER USER
 // ────────────────────────────────────────────────────────────────
 
-export const registerUser = async (req: Request, res: Response): Promise<void> => {
+export const registerUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const {
-      email,
-      Name,
-      image,
-      password,
-      country,
-      referralCode,
-      method,
-    } = req.body as RegisterUserBody;
+    const { email, Name, image, password, country, referralCode, method } =
+      req.body as RegisterUserBody;
 
     // Validate required fields
     if (!email || !Name || !method) {
-      res.status(400).json({ errorMsg: "Email, Name, and method are required" });
+      res
+        .status(400)
+        .json({ errorMsg: "Email, Name, and method are required" });
       return;
     }
 
@@ -68,7 +66,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     // Get country from IP if not provided
     let userCountry = country;
     if (!userCountry) {
-      const userIp = req.headers["x-forwarded-for"]?.toString().split(",")[0] || req.socket.remoteAddress;
+      const userIp =
+        req.headers["x-forwarded-for"]?.toString().split(",")[0] ||
+        req.socket.remoteAddress;
       if (userIp) {
         const geo = geoip.lookup(userIp);
         userCountry = geo?.country || "Unknown";
@@ -79,7 +79,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     let hashedPassword = null;
     if (method === "normal") {
       if (!password) {
-        res.status(401).json({ errorMsg: "Password is required for normal registration" });
+        res
+          .status(401)
+          .json({ errorMsg: "Password is required for normal registration" });
         return;
       }
       hashedPassword = await bcrypt.hash(password, 10);
@@ -160,7 +162,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     },
   });
 
-  if (user?.method === 'google') {
+  if (user?.method === "google") {
     res.status(405).json({ error: "User auth used google" });
     return;
   }
@@ -179,7 +181,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   // Generate authentication tokens
   const tokens = await generateAuthTokens({
     ...user,
-    password: user.password || '',
+    password: user.password || "",
   });
 
   // Set secure refresh token cookie
@@ -256,7 +258,7 @@ export const refreshTokens = async (
     }
     const accessToken = await generateAccessToken({
       ...user,
-      password: user.password || '',
+      password: user.password || "",
     });
     res.status(200).json({ success: "Access token regenerated", accessToken });
   } catch (error) {
@@ -298,7 +300,7 @@ export const forgotPassword = async (
   // Generate reset token and send email using the merged user model
   const resetPasswordToken = await generateResetPasswordToken({
     ...user,
-    password: user.password || '',
+    password: user.password || "",
   });
 
   await sendResetPasswordEmail(user, resetPasswordToken);

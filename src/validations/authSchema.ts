@@ -13,7 +13,7 @@ export const registerUserSchema = {
     country: CountrySchema.optional(),
     referralCode: z.string().optional(),
     method: z.enum(["normal", "google"]),
-    image: z.string().optional()
+    image: z.string().optional(),
   }),
 };
 
