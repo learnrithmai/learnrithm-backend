@@ -5,11 +5,12 @@
 import {
   createCheckoutData,
   listProductDatabase,
+  processNewUser,
   searchProductDatabase,
 } from "@/payment/paymentService";
 import { CheckoutUrlInfo } from "@/types/transaction";
 import { Request, Response } from "express";
-import { LocalProduct } from "@prisma/client";
+import { LocalProduct, Transaction } from "@prisma/client";
 import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
 
 export const createPayment = async (req: Request, res: Response) => {
@@ -58,11 +59,44 @@ export const createPayment = async (req: Request, res: Response) => {
 };
 
 export const processWebhook = async (req: Request, res: Response) => {
-  // Get the receipt
+  // Get the subscription
   const subscription: Subscription | null = req.body;
+  const metaDataCopy = req.body;
   if (!subscription) {
     return res.status(400).json({ error: "Failed to receive subscription!" });
   }
-
+  // Get the subscription detail
+  const productName: string = subscription.data.attributes.product_name;
+  const variantName: string = subscription.data.attributes.variant_name;
+  const variant: LocalProduct | null = await searchProductDatabase(
+    productName,
+    variantName
+  );
+  if (!variant) {
+    return res.status(400).json({
+      error:
+        "Product data in Lemon Squeezy and Local DataBase is not sync! Try run syncProducts().",
+    });
+  }
+  // Check subscription type
+  if (metaDataCopy.meta.event_name === "subscription_created") {
+    // Process the transaction
+    const response: Transaction | null = await processNewUser(
+      subscription,
+      variant
+    );
+    // Process failed
+    if (!response) {
+      return res.status(400).json({
+        error:
+          "Can not process transaction. User already exists or Products data not sync",
+      });
+    }
+    // Process successfully
+    return res
+      .status(200)
+      .json({ message: "Create transaction for new user", data: response });
+  }
+  // No operation on any other subscription type
   res.status(200).json({ message: "Successfully received subscription." });
 };

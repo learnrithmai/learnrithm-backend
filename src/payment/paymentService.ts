@@ -11,6 +11,7 @@ import {
   getProduct,
   listVariants,
   ListVariants,
+  Subscription,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import { addMonthsUtil, addYearsUtil } from "@/utils/paymentUtils";
 
@@ -25,14 +26,14 @@ lemonSqueezySetup({
   onError: (error) => console.error("Error!", error),
 });
 
-// Create transaction for new user
+// Create transaction
 export const createTransaction = async (
   data: TransactionData
 ): Promise<Transaction> => {
   return prisma.transaction.create({ data });
 };
 
-// Update transaction for existing user
+// Update transaction
 export const updateTransaction = async (
   data: Transaction
 ): Promise<Transaction> => {
@@ -68,6 +69,39 @@ export const getTransactionByEmail = async (
 export const isUserExist = async (email: string): Promise<boolean> => {
   const transaction = await getTransactionByEmail(email);
   return transaction !== null;
+};
+
+// Process Transaction for new User
+export const processNewUser = async (
+  subscription: Subscription,
+  variant: LocalProduct
+): Promise<Transaction | null> => {
+  // Get Email and check if user already exists
+  const email: string = subscription.data.attributes.user_email;
+  if (await isUserExist(email)) {
+    return null;
+  }
+  // Calculate Start Date and End Date
+  const startDate: Date = new Date();
+  const trialEndTime: string | null =
+    subscription.data.attributes.trial_ends_at;
+  if (!trialEndTime) {
+    return null;
+  }
+  const endDate: Date = new Date(trialEndTime);
+  // Construct the data
+  const transactionData: TransactionData = {
+    orderName: variant.name,
+    orderVariant: variant.variant,
+    subscriptionStart: startDate,
+    subscriptionEnd: endDate,
+    email: email,
+    duration: variant.interval,
+    refunded: false,
+    freeTrial: true,
+  };
+  // Create the transaction
+  return await createTransaction(transactionData);
 };
 
 // Create a product in database
@@ -215,13 +249,17 @@ export const createCheckoutData = async (
 };
 
 // Calculate the End date of the subscription
-export const getEndDate = (interval: string, startDate: Date): Date | null => {
+export const getEndDate = (
+  interval: string,
+  startDate: Date,
+  count: number
+): Date | null => {
   let endDate: Date;
   if (interval === "year") {
-    endDate = addYearsUtil(startDate, 1);
+    endDate = addYearsUtil(startDate, count);
     return endDate;
   } else if (interval === "month") {
-    endDate = addMonthsUtil(startDate, 1);
+    endDate = addMonthsUtil(startDate, count);
     return endDate;
   } else {
     return null;
