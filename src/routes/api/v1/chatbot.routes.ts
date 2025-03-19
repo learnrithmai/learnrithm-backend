@@ -1,6 +1,6 @@
-import express from 'express';
-import { generateChatResponse } from '../../../controllers/chatbot/chatbotController';
-import passport from 'passport';
+import express from "express";
+import { generateChatResponse } from "../../../controllers/chatbot/chatbotController";
+import passport from "passport";
 
 const router = express.Router();
 
@@ -35,8 +35,12 @@ const router = express.Router();
  *       500:
  *         description: Server Error
  */
-router.post('/', passport.authenticate('jwt', { session: false }), async (req, res, next) => {
-  await generateChatResponse(req, res, next);
-});
+router.post(
+  "/",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res, next) => {
+    await generateChatResponse(req, res, next);
+  },
+);
 
 export default router;
