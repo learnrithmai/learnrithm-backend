@@ -14,6 +14,7 @@ class OpenAIService {
   async generateChatResponse(
     userMessage: string,
     context?: string,
+    retries = 3
   ): Promise<string> {
     try {
       const messages = [
@@ -37,12 +38,33 @@ class OpenAIService {
         max_tokens: openaiConfig.maxTokens,
       });
 
+      // Log token usage for monitoring
+      if (response.usage) {
+        logger.info(
+          `Tokens: ${response.usage.total_tokens} (Prompt: ${response.usage.prompt_tokens}, Completion: ${response.usage.completion_tokens})`
+        );
+      }
+
       return (
         response.choices[0].message.content || "I couldn't generate a response."
       );
     } catch (error) {
-      logger.error("OpenAI API Error:", error as string);
-      throw new Error("Failed to generate chat response from OpenAI");
+      // Handle rate limiting with exponential backoff
+      if (
+        retries > 0 &&
+        error instanceof Error &&
+        (error as { status?: number }).status === 429
+      ) {
+        const delay = Math.pow(2, 4 - retries) * 1000;
+        logger.info(`Rate limited by OpenAI. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.generateChatResponse(userMessage, context, retries - 1);
+      }
+
+      // Improved error handling
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("OpenAI API Error:", errorMessage);
+      throw new Error(`Failed to generate chat response: ${errorMessage}`);
     }
   }
 }

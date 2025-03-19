@@ -10,7 +10,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import authRouter from "./auth";
 import user from "./user";
-import chatbotRoutes from "./chatbot.routes";
+import chatbotRoutes from "./openai";
 
 const router = Router();
 
@@ -33,8 +33,11 @@ router.use("/auth", authRouter);
 //* ---------- Protected routes ------------
 router.use("/user", user);
 
+// Use chatbot route only once
 router.use("/chatbot", chatbotRoutes);
 
+// Add OpenAI test routes
+router.use("/openai", chatbotRoutes);
 router
   .route("/upload")
   .post(uploadPDF.single("files"), multerErrorHandler(uploadPDFOptions));
