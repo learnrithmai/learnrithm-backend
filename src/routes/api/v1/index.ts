@@ -10,6 +10,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import authRouter from "./auth";
 import user from "./user";
+import chatbotRoutes from './chatbot.routes';
 
 const router = Router();
 
@@ -31,6 +32,8 @@ router.use("/auth", authRouter);
 
 //* ---------- Protected routes ------------
 router.use("/user", user);
+
+router.use('/chatbot', chatbotRoutes);
 
 router
   .route("/upload")

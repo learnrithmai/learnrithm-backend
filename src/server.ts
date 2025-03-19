@@ -25,7 +25,6 @@ import {
   morganErrorHandler,
   morganSuccessHandler,
 } from "./config/logging/morganConfig";
-import chatRoutes from "./routes/api/v1/ChatRoutes"; // Import chat routes
 
 dotenv.config();
 
@@ -100,7 +99,6 @@ app.get("/", (req: Request, res: Response) => {
 
 //APIs Consume
 app.use("/api/v1", apiV1Routes);
-app.use("/api/v1", chatRoutes); // Mount chat routes
 
 // global error handling
 app.use(errorHandler);
