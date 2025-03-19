@@ -18,7 +18,7 @@ generator client {
 //////////////////////////
 
 model User {
-  id                     String    @id @default(uuid())
+  id                     String    @id @default(uuid()) @map("_id")
   email                  String    @unique
   password               String
   createdAt              DateTime? @default(now())
@@ -36,8 +36,7 @@ model User {
   facebook               String?
   x                      String?
   isVerified             Boolean   @default(false)
-  
-  // Add any relationships here
+
 }
 
 
