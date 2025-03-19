@@ -1,4 +1,9 @@
-import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions, VerifiedCallback } from "passport-jwt";
+import {
+  Strategy as JwtStrategy,
+  ExtractJwt,
+  StrategyOptions,
+  VerifiedCallback,
+} from "passport-jwt";
 import { ENV } from "../../validations/envSchema";
 import { tokenTypes } from "../../config/const";
 import { JwtPayload } from "jsonwebtoken";
@@ -18,8 +23,8 @@ import prisma from "../../config/db/prisma";
  * passport.use(new JwtStrategy(jwtOptions, jwtVerify));
  */
 const jwtOptions: StrategyOptions = {
-    secretOrKey: (ENV.JWT_SECRET as string) || "default_secret",
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: (ENV.JWT_SECRET as string) || "default_secret",
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 };
 
 /**
@@ -32,21 +37,24 @@ const jwtOptions: StrategyOptions = {
  * @example
  * passport.use(new JwtStrategy(jwtOptions, jwtVerify));
  */
-const jwtVerify = async (payload: JwtPayload, done: VerifiedCallback): Promise<void> => {
-    try {
-        if (payload.type !== tokenTypes.ACCESS) {
-            throw new Error("Invalid token type");
-        }
-        const user = await prisma.user.findUnique({
-            where: { id: payload.sub as string },
-        });
-        if (!user) {
-            return done(null, false);
-        }
-        done(null, user);
-    } catch (error) {
-        done(error, false);
+const jwtVerify = async (
+  payload: JwtPayload,
+  done: VerifiedCallback,
+): Promise<void> => {
+  try {
+    if (payload.type !== tokenTypes.ACCESS) {
+      throw new Error("Invalid token type");
     }
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub as string },
+    });
+    if (!user) {
+      return done(null, false);
+    }
+    done(null, user);
+  } catch (error) {
+    done(error, false);
+  }
 };
 
 const jwtStrategy = new JwtStrategy(jwtOptions, jwtVerify);

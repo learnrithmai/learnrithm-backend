@@ -12,8 +12,8 @@ import { HelmetOptions } from "helmet";
  * app.use(helmet(helmetOptions));
  */
 export const helmetOptions: HelmetOptions = {
-    //Blocks others from loading your resources cross-origin
-    crossOriginResourcePolicy: {
-        policy: isProd ? "same-origin" : "cross-origin", // fix loading image for diff origin in dev mode
-    },
+  //Blocks others from loading your resources cross-origin
+  crossOriginResourcePolicy: {
+    policy: isProd ? "same-origin" : "cross-origin", // fix loading image for diff origin in dev mode
+  },
 };

@@ -5,7 +5,10 @@ import { Request, Response } from "express";
 /**
  * Custom token to log error messages.
  */
-morgan.token("message", (req: Request, res: Response) => res.locals.errorMessage || "");
+morgan.token(
+  "message",
+  (req: Request, res: Response) => res.locals.errorMessage || "",
+);
 
 /**
  * Get IP format based on environment.
@@ -30,8 +33,10 @@ const errorResponseFormat: string = `${getIpFormat()}:method :url :status - :res
  *  app.use(morgan.successHandler);
  */
 export const morganSuccessHandler = morgan(successResponseFormat, {
-    skip: (req, res) => res.statusCode >= 400,
-    stream: { write: (message: string) => winstonLogger.info(message.trim()) } as StreamOptions,
+  skip: (req, res) => res.statusCode >= 400,
+  stream: {
+    write: (message: string) => winstonLogger.info(message.trim()),
+  } as StreamOptions,
 });
 
 /**
@@ -41,6 +46,8 @@ export const morganSuccessHandler = morgan(successResponseFormat, {
  * app.use(morgan.errorHandler);
  */
 export const morganErrorHandler = morgan(errorResponseFormat, {
-    skip: (req, res) => res.statusCode < 400,
-    stream: { write: (message: string) => winstonLogger.error(message.trim()) } as StreamOptions,
+  skip: (req, res) => res.statusCode < 400,
+  stream: {
+    write: (message: string) => winstonLogger.error(message.trim()),
+  } as StreamOptions,
 });

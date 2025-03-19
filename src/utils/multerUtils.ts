@@ -17,17 +17,27 @@ type CustomRequest = Request & { acceptedFileTypes?: RegExp };
  * @param {FileFilterCallback} cb - The callback to be invoked when the file has been processed.
  * @returns {void}
  */
-export const fileFilterPost = (req: CustomRequest, file: Express.Multer.File, cb: FileFilterCallback): void => {
-    // reject a file
-    req.acceptedFileTypes = /jpeg|jpg|png|webp/;
-    const mimetype = req.acceptedFileTypes.test(file.mimetype);
-    const extname = req.acceptedFileTypes.test(path.extname(file.originalname).toLowerCase());
+export const fileFilterPost = (
+  req: CustomRequest,
+  file: Express.Multer.File,
+  cb: FileFilterCallback,
+): void => {
+  // reject a file
+  req.acceptedFileTypes = /jpeg|jpg|png|webp/;
+  const mimetype = req.acceptedFileTypes.test(file.mimetype);
+  const extname = req.acceptedFileTypes.test(
+    path.extname(file.originalname).toLowerCase(),
+  );
 
-    if (mimetype && extname) {
-        return cb(null, true);
-    }
+  if (mimetype && extname) {
+    return cb(null, true);
+  }
 
-    cb(new Error(`Invalid file type. Only ${req.acceptedFileTypes.toString()} are allowed.`));
+  cb(
+    new Error(
+      `Invalid file type. Only ${req.acceptedFileTypes.toString()} are allowed.`,
+    ),
+  );
 };
 
 /**
@@ -40,11 +50,15 @@ export const fileFilterPost = (req: CustomRequest, file: Express.Multer.File, cb
  * @param {FileFilterCallback} cb - The callback to be invoked when the file has been processed.
  * @returns {void}
  */
-export const fileFilterPDF = (req: CustomRequest, file: Express.Multer.File, cb: FileFilterCallback): void => {
-    // Check if the file is a PDF
-    if (file.mimetype === "application/pdf") {
-        cb(null, true);
-    } else {
-        cb(new Error("Only PDF files are allowed"));
-    }
+export const fileFilterPDF = (
+  req: CustomRequest,
+  file: Express.Multer.File,
+  cb: FileFilterCallback,
+): void => {
+  // Check if the file is a PDF
+  if (file.mimetype === "application/pdf") {
+    cb(null, true);
+  } else {
+    cb(new Error("Only PDF files are allowed"));
+  }
 };
