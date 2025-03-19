@@ -4,12 +4,21 @@ import { chatRequestValidation } from '@/validations/chatValidation';
 
 const router = express.Router();
 
-// Async handler wrapper to properly handle promises
-const asyncHandler = (fn: Function) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Define a proper type for Express route handlers
+type ExpressHandler = (
+  req: express.Request, 
+  res: express.Response, 
+  next: express.NextFunction
+) => Promise<void | express.Response | undefined>;
+
+// Use the specific type instead of generic Function
+const asyncHandler = (fn: ExpressHandler) => (
+  req: express.Request, 
+  res: express.Response, 
+  next: express.NextFunction
+) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
-
-// Removed duplicate validation declaration
 
 router.post('/chat/:chatId', chatRequestValidation, asyncHandler(handleChatRequest));
 
