@@ -1,7 +1,6 @@
 import { tokenTypes } from "@/config/const";
 import prisma from "@/config/db/prisma";
 import { getCookieOptions } from "@/config/security/cookieOptions";
-import { asyncWrapper } from "@/middleware/asyncWrapper";
 import {
   isPasswordMatch,
   verifyEmail as verifyEmailUtil,
@@ -43,6 +42,8 @@ export const registerUser = async (
   try {
     const { email, Name, image, password, country, referralCode, method } =
       req.body as RegisterUserBody;
+
+    console.table({ email, Name, image, password, country, referralCode, method });
 
     // Validate required fields
     if (!email || !Name || !method) {
@@ -151,7 +152,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
   // Find user by email
   const user = await prisma.user.findUnique({
-    where: { email: normalizedIdentifier },
+    where: { email: normalizedIdentifier, method: "normal" },
     select: {
       id: true,
       method: true,
@@ -179,10 +180,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 
   // Generate authentication tokens
-  const tokens = await generateAuthTokens({
-    ...user,
-    password: user.password || "",
-  });
+  const tokens = await generateAuthTokens(user);
 
   // Set secure refresh token cookie
   res.cookie(
@@ -250,16 +248,13 @@ export const refreshTokens = async (
       tokenTypes.REFRESH as TokenType,
     );
     const user = await prisma.user.findUnique({
-      where: { id: refreshTokenDoc.userId },
+      where: { id: refreshTokenDoc.userId, method: "normal" },
     });
     if (!user || !user.password) {
       res.status(404).json({ error: "User with that email not found" });
       return;
     }
-    const accessToken = await generateAccessToken({
-      ...user,
-      password: user.password || "",
-    });
+    const accessToken = await generateAccessToken(user);
     res.status(200).json({ success: "Access token regenerated", accessToken });
   } catch (error) {
     if ((error as Error)?.name === "TokenExpiredError") {
@@ -290,18 +285,16 @@ export const forgotPassword = async (
   const normalizedEmail = email.toLowerCase();
 
   const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
+    where: { email: normalizedEmail, method: "normal" }
   });
-  if (!user || !user.password) {
+
+  if (!user) {
     res.status(404).json({ error: "User with that email not found" });
     return;
   }
 
   // Generate reset token and send email using the merged user model
-  const resetPasswordToken = await generateResetPasswordToken({
-    ...user,
-    password: user.password || "",
-  });
+  const resetPasswordToken = await generateResetPasswordToken(user);
 
   await sendResetPasswordEmail(user, resetPasswordToken);
   res
@@ -333,7 +326,7 @@ export const resetPassword = async (
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: resetTokenDoc.userId },
+    where: { id: resetTokenDoc.userId, method: "normal" },
   });
   if (!user) {
     res.status(404).json({ error: "No user found with that token" });
@@ -368,8 +361,9 @@ export const sendVerificationEmail = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+
   const user = await prisma.user.findUnique({
-    where: { email: req.user?.email },
+    where: { email: req.user?.email, method: "normal" },
   });
   if (!user) {
     res.status(404).json({ error: "User with that email not found" });
@@ -380,7 +374,7 @@ export const sendVerificationEmail = async (
     req.user as {
       id: string;
       email: string;
-      password: string;
+      Name: string;
       createdAt: Date | null;
     },
   );
@@ -395,8 +389,11 @@ export const sendVerificationEmail = async (
 // VERIFY EMAIL
 // ────────────────────────────────────────────────────────────────
 
-export const verifyEmail = asyncWrapper(async (req: Request, res: Response) => {
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const { token } = req.query as VerifyEmailQuery;
   await verifyEmailUtil(token);
   res.status(204).send();
-});
+};

@@ -1,10 +1,14 @@
 import { transporter } from "@/config/email/nodemailConfig";
 import logger from "@/utils/chalkLogger";
 import { ENV } from "@/validations/envSchema";
-import { User } from "@prisma/client";
 import { format } from "date-fns";
 import { SendMailOptions } from "nodemailer";
 import { Attachment } from "nodemailer/lib/mailer";
+
+type User = {
+  Name: string;
+  email: string;
+};
 
 // @ts-expect-error : test is not defined in process.env
 if (ENV.NODE_ENV !== "test") {
@@ -67,6 +71,7 @@ export const sendResetPasswordEmail = async (
     html: body,
     attachments,
   };
+
   const mailInfo = await sendEmail(mailOptions);
   console.log("Message: %s", JSON.stringify(mailInfo));
   logger.info(

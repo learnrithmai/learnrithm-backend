@@ -7,28 +7,46 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 
 type User = {
   id: string;
+  Name: string;
   email: string;
-  password: string;
   createdAt: Date | null;
 };
 
 // Type guard to check if data is of type User
 function isUser(data: {
   id: string;
+  Name: string;
   email: string;
-  password: string;
   createdAt: Date | null;
 }): data is User {
   return data && typeof data === "object" && "id" in data && "email" in data;
 }
 
 /**
+ * Helper: Delete any existing tokens of the specified type for the given user.
+ * @param {string} userId
+ * @param {TokenType} type
+ */
+const deleteExistingTokens = async (userId: string, type: TokenType): Promise<void> => {
+  const existingTokens = await prisma.token.findMany({
+    where: { userId, tokenType: type },
+  });
+  if (existingTokens.length > 0) {
+    await prisma.token.deleteMany({
+      where: { userId, tokenType: type },
+    });
+    return;
+  }
+  return;
+};
+
+/**
  * Generate token
- * @param {string | Prisma.User} data - The ID / data of the user for whom the token is being generated.
- * @param {Date} expires - The exact date and time when the token should expire. This is used if `expiresIn` is not provided.
+ * @param {string | User} data - The ID or data of the user for whom the token is being generated.
+ * @param {Date} expires - The exact date and time when the token should expire. Used if `expiresIn` is not provided.
  * @param {TokenType} type - The type of the token (e.g., access, refresh).
- * @param {string} [secret] - The secret key used to sign the token. Defaults to "secret" if not provided.
- * @param {string | number} [expiresIn] - The duration for which the token is valid (e.g., "1h" for one hour). If provided, this overrides the `expires` parameter.
+ * @param {string} [secret] - The secret key used to sign the token. Defaults to ENV.JWT_SECRET.
+ * @param {string | number} [expiresIn] - Duration for which the token is valid (e.g., "1h"). Overrides `expires` if provided.
  * @returns {string} - The generated JWT token.
  */
 export const generateToken = (
@@ -62,11 +80,12 @@ export const generateToken = (
 };
 
 /**
- * Save a token
+ * Save a token (using upsert to prevent multiple tokens with the same type for the same userId)
  * @param {string} token
  * @param {string} userId
  * @param {Date} expires
  * @param {TokenType} type
+ * @param {string} email
  * @returns {Promise<Token>}
  */
 export const saveToken = async (
@@ -77,7 +96,7 @@ export const saveToken = async (
   email: string,
 ): Promise<Token> => {
   const normalizedEmail = email.toLowerCase();
-  return await prisma.token.create({
+  const tokenCreated = await prisma.token.create({
     data: {
       token,
       email: normalizedEmail,
@@ -86,10 +105,11 @@ export const saveToken = async (
       tokenType: type,
     },
   });
+  return tokenCreated;
 };
 
 /**
- *
+ * Helper function to verify token using JWT.
  */
 const verifyTokenHelper = (
   token: string,
@@ -97,6 +117,7 @@ const verifyTokenHelper = (
 ): Promise<JwtPayload> => {
   return new Promise((resolve, reject) => {
     jwt.verify(token, secret, (err, decodedPayload) => {
+      console.log("decodedPayload", decodedPayload);
       if (err) {
         return reject(
           createHttpError.Unauthorized("Token verification failed"),
@@ -108,10 +129,10 @@ const verifyTokenHelper = (
 };
 
 /**
- * Verify token and return token doc (or throw an error if it is not valid)
+ * Verify token and return token document (or throw an error if it is not valid)
  * @param {string} token
  * @param {TokenType} type
- * @returns {Promise<IToken>}
+ * @returns {Promise<Token>}
  */
 export const verifyToken = async (
   token: string,
@@ -162,6 +183,7 @@ export const generateAuthTokens = async (
     refreshTokenExpires,
     TokenType.refresh,
   );
+  // Upsert will update an existing refresh token if it exists, so no extra deletion is required.
   await saveToken(
     refreshToken,
     user.id,
@@ -183,7 +205,7 @@ export const generateAuthTokens = async (
 };
 
 /**
- * Generate auth tokens
+ * Generate access token
  * @param {User} user
  * @returns {Promise<{ token: string, expires: Date }>}
  */
@@ -206,22 +228,18 @@ export const generateAccessToken = async (
 };
 
 /**
- * Generate reset password token
+ * Generate reset password token.
+ * First checks if any reset password tokens already exist for the user and deletes them.
  * @param {User} user
  * @returns {Promise<string>}
  */
 export const generateResetPasswordToken = async (
   user: User,
 ): Promise<string> => {
-  // Delete any existing reset tokens
-  await prisma.token.deleteMany({
-    where: {
-      userId: user.id,
-      tokenType: TokenType.password_reset,
-    },
-  });
+  // Check if reset password token(s) exist and delete them first
+  await deleteExistingTokens(user.id, TokenType.password_reset);
 
-  //  generate a new reset password token
+  // Generate a new reset password token
   const expires = addMinutes(
     new Date(),
     ENV.JWT_RESET_PASSWORD_EXPIRATION_MINUTES,
@@ -244,18 +262,15 @@ export const generateResetPasswordToken = async (
 };
 
 /**
- * Generate verify email token
+ * Generate verify email token.
+ * First checks if any verify email tokens already exist for the user and deletes them.
  * @param {User} user
  * @returns {Promise<string>}
  */
 export const generateVerifyEmailToken = async (user: User): Promise<string> => {
-  // Delete any existing reset tokens
-  await prisma.token.deleteMany({
-    where: {
-      userId: user.id,
-      tokenType: TokenType.email_validation,
-    },
-  });
+  // Check if verify email token(s) exist and delete them first
+  await deleteExistingTokens(user.id, TokenType.email_validation);
+
   const expires = addMinutes(
     new Date(),
     ENV.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES,

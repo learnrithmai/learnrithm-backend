@@ -9,8 +9,8 @@ import {
   forgotPassword,
   resetPassword,
   sendVerificationEmail,
+  verifyEmail,
 } from "@controllers/auth-controller";
-import { verifyEmail } from "@/utils/authUtils";
 import {
   registerUserSchema,
   loginSchema,

@@ -86,12 +86,14 @@ model referralCode {
 //////////////////////////
 
 model Token {
-  id                   String   @id @map("_id") @default(auto()) @db.ObjectId
-  userId               String   @unique
-  email                String   @unique
-  token                String
-  tokenExpires         DateTime @map("tokenExpires") @default(now())
-  tokenType            TokenType   
+  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  token                   String
+  email                   String
+  userId                  String
+  tokenExpires            DateTime
+  tokenType               TokenType
+
+  @@unique([userId, tokenType], name: "userId_tokenType")
 }
 
 model Streaker {
