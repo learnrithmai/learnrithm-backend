@@ -43,7 +43,15 @@ export const registerUser = async (
     const { email, Name, image, password, country, referralCode, method } =
       req.body as RegisterUserBody;
 
-    console.table({ email, Name, image, password, country, referralCode, method });
+    console.table({
+      email,
+      Name,
+      image,
+      password,
+      country,
+      referralCode,
+      method,
+    });
 
     // Validate required fields
     if (!email || !Name || !method) {
@@ -285,7 +293,7 @@ export const forgotPassword = async (
   const normalizedEmail = email.toLowerCase();
 
   const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail, method: "normal" }
+    where: { email: normalizedEmail, method: "normal" },
   });
 
   if (!user) {
@@ -361,7 +369,6 @@ export const sendVerificationEmail = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-
   const user = await prisma.user.findUnique({
     where: { email: req.user?.email, method: "normal" },
   });

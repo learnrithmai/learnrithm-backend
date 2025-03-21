@@ -27,7 +27,10 @@ function isUser(data: {
  * @param {string} userId
  * @param {TokenType} type
  */
-const deleteExistingTokens = async (userId: string, type: TokenType): Promise<void> => {
+const deleteExistingTokens = async (
+  userId: string,
+  type: TokenType,
+): Promise<void> => {
   const existingTokens = await prisma.token.findMany({
     where: { userId, tokenType: type },
   });
