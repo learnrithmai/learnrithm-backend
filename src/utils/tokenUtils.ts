@@ -6,10 +6,12 @@ import createHttpError from "http-errors";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 type User = {
-  id: string;
-  Name: string;
-  email: string;
-  createdAt: Date | null;
+  id: string,
+  Name: string,
+  email: string,
+  method: string,
+  lastLogin: Date | null,
+  imgThumbnail: string | null,
 };
 
 // Type guard to check if data is of type User
@@ -17,7 +19,9 @@ function isUser(data: {
   id: string;
   Name: string;
   email: string;
-  createdAt: Date | null;
+  method: string,
+  lastLogin: Date | null,
+  imgThumbnail: string | null,
 }): data is User {
   return data && typeof data === "object" && "id" in data && "email" in data;
 }

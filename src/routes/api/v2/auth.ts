@@ -18,11 +18,17 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
 } from "@/validations/authSchema";
+import auth from "@/middleware/auth/passportJWTAuth";
 
 const router = Router({ mergeParams: true });
 
 // Register a new user
 router.post("/register", validate(registerUserSchema), registerUser);
+
+//test
+router.get("/test", auth(), (req, res) => {
+  res.send("test");
+});
 
 // User login
 router.post("/login", validate(loginSchema), login);

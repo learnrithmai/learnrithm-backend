@@ -15,9 +15,23 @@ export const registerUserSchema = {
     method: z.enum(["normal", "google"]),
     image: z.string().optional(),
   }),
-};
+}; 
 
 export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
+
+export type ResponseUserSchema = {
+  id: string;
+  Name: string;
+  email: string;
+  method: string;
+  lastLogin: string;
+  imgThumbnail?: string;
+  token: {
+    accessToken: string;
+    refreshToken: string;
+    tokenExpiry: number;
+  };
+};
 
 // ────────────────────────────────────────────────────────────────
 // Login Schema

@@ -14,6 +14,8 @@ export const getUser = async (
   try {
     const { email } = req.params;
 
+    console.log(email);
+
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -124,7 +126,6 @@ export const UpdateUserPassword = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-
     const { id, password, newPassword } = req.body;
 
     // Validate input
@@ -139,7 +140,7 @@ export const UpdateUserPassword = async (
 
     // Verify the user exists
     const user = await prisma.user.findUnique({
-      where: { id, method: 'normal' },
+      where: { id, method: "normal" },
       select: { password: true },
     });
 
@@ -147,7 +148,6 @@ export const UpdateUserPassword = async (
       res.status(404).json({ errorMsg: "User not found" });
       return;
     }
-
 
     if (user?.password !== password) {
       res.status(400).json({ errorMsg: "Password is incorrect" });
@@ -171,12 +171,9 @@ export const UpdateUserPassword = async (
   }
 };
 
-
 /**
  * Update an existing user Plan
  */
-
-
 
 export const updateUserPlan = async (
   req: Request,
@@ -184,11 +181,7 @@ export const updateUserPlan = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const {
-      id,
-      plan,
-      ExpirationSubscription,
-    } = req.body;
+    const { id, plan, ExpirationSubscription } = req.body;
 
     // Validate that the user ID is provided
     if (!id) {
@@ -199,7 +192,8 @@ export const updateUserPlan = async (
     // If plan is provided, then ExpirationSubscription must be provided as well
     if (!plan || !ExpirationSubscription) {
       res.status(400).json({
-        errorMsg: "plan and Expiration Subscription is required when updating user plan",
+        errorMsg:
+          "plan and Expiration Subscription is required when updating user plan",
       });
       return;
     }

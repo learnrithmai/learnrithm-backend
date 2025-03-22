@@ -35,15 +35,9 @@ import geoip from "geoip-lite";
 // REGISTER USER
 // ────────────────────────────────────────────────────────────────
 
-export const registerUser = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, Name, image, password, country, referralCode, method } =
-      req.body as RegisterUserBody;
-
-    console.table({
+    const {
       email,
       Name,
       image,
@@ -51,19 +45,17 @@ export const registerUser = async (
       country,
       referralCode,
       method,
-    });
+    } = req.body as RegisterUserBody;
 
-    // Validate required fields
+    // Validate required fields.
     if (!email || !Name || !method) {
-      res
-        .status(400)
-        .json({ errorMsg: "Email, Name, and method are required" });
+      res.status(400).json({ errorMsg: "Email, Name, and method are required" });
       return;
     }
 
     const normalizedEmail = email.toLowerCase();
 
-    // Check if a user with the same email already exists
+    // Check if user exists.
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -72,7 +64,7 @@ export const registerUser = async (
       return;
     }
 
-    // Get country from IP if not provided
+    // Determine country from IP if not provided.
     let userCountry = country;
     if (!userCountry) {
       const userIp =
@@ -84,21 +76,19 @@ export const registerUser = async (
       }
     }
 
-    // For normal sign-ups, ensure a password is provided and hash it
-    let hashedPassword = null;
+    // For normal sign-ups, require and hash a password.
+    let hashedPassword: string | null = null;
     if (method === "normal") {
       if (!password) {
-        res
-          .status(401)
-          .json({ errorMsg: "Password is required for normal registration" });
+        res.status(401).json({ errorMsg: "Password is required for normal registration" });
         return;
       }
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-    // Use a transaction to ensure that user creation, token creation, and referral processing happen atomically
-    const newUser = await prisma.$transaction(async (tx) => {
-      // Create the new user record
+    // Use a transaction for atomic operations.
+    const { createdUser, tokens } = await prisma.$transaction(async (tx) => {
+      // Create the new user.
       const createdUser = await tx.user.create({
         data: {
           email: normalizedEmail,
@@ -111,7 +101,16 @@ export const registerUser = async (
         },
       });
 
-      // Process referral if a referral code is provided
+      // Generate authentication tokens.
+      const tokens = await generateAuthTokens(createdUser);
+
+      // Set secure refresh token cookie.
+      res.cookie("jwt", tokens.refresh.token, getCookieOptions(tokens.refresh.expires));
+
+      // Process OAuth token storage if needed.
+      // (You can add code here for OAuth token storage.)
+
+      // Process referral if provided.
       if (referralCode) {
         const referrer = await tx.referralCode.findUnique({
           where: { code: referralCode },
@@ -132,21 +131,34 @@ export const registerUser = async (
         }
       }
 
-      return createdUser;
+      return { createdUser, tokens };
     });
 
+    // Build the client user object.
+    const clientUser = {
+      id: createdUser.id,
+      Name: createdUser.Name,
+      email: createdUser.email,
+      method: createdUser.method,
+      lastLogin: createdUser?.lastLogin ? new Date(createdUser.lastLogin).toISOString() : null,
+      imgThumbnail: createdUser.imgThumbnail,
+      token: {
+        accessToken: tokens.access,
+        refreshToken: tokens.refresh.token,
+        tokenExpiry: tokens.refresh.expires, // This should be a numeric timestamp (ms)
+      },
+    };
+
     res.status(201).json({
-      success: `User ${newUser.email} created successfully!`,
-      user: newUser,
+      success: `User ${createdUser.email} created successfully!`,
+      user: clientUser,
     });
-    return;
   } catch (error) {
     console.error("Error in registerUser:", error);
     res.status(500).json({
       errorMsg: "User creation failed",
       details: error instanceof Error ? error.message : error,
     });
-    return;
   }
 };
 
@@ -167,6 +179,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       password: true,
       Name: true,
       email: true,
+      lastLogin: true,
+      imgThumbnail: true,
       createdAt: true,
     },
   });
@@ -239,10 +253,8 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 // REFRESH TOKENS
 // ────────────────────────────────────────────────────────────────
 
-export const refreshTokens = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+
+export const refreshTokens = async (req: Request, res: Response): Promise<void> => {
   log.info("Refreshing token: creating new access token if expired...");
   const { jwt: refreshToken } = req.cookies;
   if (!refreshToken) {
@@ -251,10 +263,7 @@ export const refreshTokens = async (
   }
   let refreshTokenDoc;
   try {
-    refreshTokenDoc = await verifyToken(
-      refreshToken,
-      tokenTypes.REFRESH as TokenType,
-    );
+    refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH as TokenType);
     const user = await prisma.user.findUnique({
       where: { id: refreshTokenDoc.userId, method: "normal" },
     });
@@ -262,22 +271,25 @@ export const refreshTokens = async (
       res.status(404).json({ error: "User with that email not found" });
       return;
     }
-    const accessToken = await generateAccessToken(user);
-    res.status(200).json({ success: "Access token regenerated", accessToken });
+    // Generate a new access token.
+    // Assume generateAccessToken returns an object with 'token' (string) and 'expiresAt' (number in seconds)
+    const { token: newAccessToken, expires } = await generateAccessToken(user);
+    res.status(200).json({
+      success: "Access token regenerated",
+      accessToken: { token: newAccessToken },
+      expiresAt: expires, 
+      refreshToken,
+    });
   } catch (error) {
     if ((error as Error)?.name === "TokenExpiredError") {
       res.clearCookie("jwt");
       if (refreshTokenDoc) {
         await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
       }
-      res
-        .status(401)
-        .json({ error: "Refresh token expired. Please log in again." });
+      res.status(401).json({ error: "Refresh token expired. Please log in again." });
       return;
     }
-    res
-      .status(500)
-      .json({ error: "An error occurred while refreshing tokens." });
+    res.status(500).json({ error: "An error occurred while refreshing tokens." });
   }
 };
 
@@ -377,14 +389,11 @@ export const sendVerificationEmail = async (
     return;
   }
 
-  const verifyEmailToken = await generateVerifyEmailToken(
-    req.user as {
-      id: string;
-      email: string;
-      Name: string;
-      createdAt: Date | null;
-    },
-  );
+  if (!req.user) {
+    res.status(400).json({ error: "User information is missing" });
+    return;
+  }
+  const verifyEmailToken = await generateVerifyEmailToken(req.user);
 
   await sendVerificationEmailUtil(user, verifyEmailToken);
   res

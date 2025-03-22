@@ -1,16 +1,30 @@
 import { Router } from "express";
 import validate from "express-zod-safe";
-import { getUser, updateUserInfo, UpdateUserPassword, updateUserPlan } from "@controllers/user-controller";
+import {
+  getUser,
+  updateUserInfo,
+  UpdateUserPassword,
+  updateUserPlan,
+} from "@controllers/user-controller";
 // import auth from "@/middleware/auth/passportJWTAuth";
-import { getUserSchema, updateInfoSchema, updatePasswordSchema, updatePlanSchema } from "@/validations/userSchema";
+import {
+  getUserSchema,
+  updateInfoSchema,
+  updatePasswordSchema,
+  updatePlanSchema,
+} from "@/validations/userSchema";
 
 const router = Router({ mergeParams: true });
 
 // Get single user
-router.get("/email", validate(getUserSchema), getUser);
+router.get("/:email", validate(getUserSchema), getUser);
 
 // Update user password
-router.post("/update-password", validate(updatePasswordSchema), UpdateUserPassword);
+router.post(
+  "/update-password",
+  validate(updatePasswordSchema),
+  UpdateUserPassword,
+);
 
 // Update user plan
 router.post("/update-plan", validate(updatePlanSchema), updateUserPlan);
@@ -19,7 +33,6 @@ router.post("/update-plan", validate(updatePlanSchema), updateUserPlan);
 router.post("/update-info", validate(updateInfoSchema), updateUserInfo);
 
 export default router;
-
 
 /**
  * @swagger
