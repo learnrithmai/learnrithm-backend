@@ -35,21 +35,19 @@ import geoip from "geoip-lite";
 // REGISTER USER
 // ────────────────────────────────────────────────────────────────
 
-export const registerUser = async (req: Request, res: Response): Promise<void> => {
+export const registerUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const {
-      email,
-      Name,
-      image,
-      password,
-      country,
-      referralCode,
-      method,
-    } = req.body as RegisterUserBody;
+    const { email, Name, image, password, country, referralCode, method } =
+      req.body as RegisterUserBody;
 
     // Validate required fields.
     if (!email || !Name || !method) {
-      res.status(400).json({ errorMsg: "Email, Name, and method are required" });
+      res
+        .status(400)
+        .json({ errorMsg: "Email, Name, and method are required" });
       return;
     }
 
@@ -80,7 +78,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     let hashedPassword: string | null = null;
     if (method === "normal") {
       if (!password) {
-        res.status(401).json({ errorMsg: "Password is required for normal registration" });
+        res
+          .status(401)
+          .json({ errorMsg: "Password is required for normal registration" });
         return;
       }
       hashedPassword = await bcrypt.hash(password, 10);
@@ -105,7 +105,11 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       const tokens = await generateAuthTokens(createdUser);
 
       // Set secure refresh token cookie.
-      res.cookie("jwt", tokens.refresh.token, getCookieOptions(tokens.refresh.expires));
+      res.cookie(
+        "jwt",
+        tokens.refresh.token,
+        getCookieOptions(tokens.refresh.expires),
+      );
 
       // Process OAuth token storage if needed.
       // (You can add code here for OAuth token storage.)
@@ -140,7 +144,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       Name: createdUser.Name,
       email: createdUser.email,
       method: createdUser.method,
-      lastLogin: createdUser?.lastLogin ? new Date(createdUser.lastLogin).toISOString() : null,
+      lastLogin: createdUser?.lastLogin
+        ? new Date(createdUser.lastLogin).toISOString()
+        : null,
       imgThumbnail: createdUser.imgThumbnail,
       token: {
         accessToken: tokens.access,
@@ -253,8 +259,10 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 // REFRESH TOKENS
 // ────────────────────────────────────────────────────────────────
 
-
-export const refreshTokens = async (req: Request, res: Response): Promise<void> => {
+export const refreshTokens = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   log.info("Refreshing token: creating new access token if expired...");
   const { jwt: refreshToken } = req.cookies;
   if (!refreshToken) {
@@ -263,7 +271,10 @@ export const refreshTokens = async (req: Request, res: Response): Promise<void> 
   }
   let refreshTokenDoc;
   try {
-    refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH as TokenType);
+    refreshTokenDoc = await verifyToken(
+      refreshToken,
+      tokenTypes.REFRESH as TokenType,
+    );
     const user = await prisma.user.findUnique({
       where: { id: refreshTokenDoc.userId, method: "normal" },
     });
@@ -277,7 +288,7 @@ export const refreshTokens = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({
       success: "Access token regenerated",
       accessToken: { token: newAccessToken },
-      expiresAt: expires, 
+      expiresAt: expires,
       refreshToken,
     });
   } catch (error) {
@@ -286,10 +297,14 @@ export const refreshTokens = async (req: Request, res: Response): Promise<void> 
       if (refreshTokenDoc) {
         await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
       }
-      res.status(401).json({ error: "Refresh token expired. Please log in again." });
+      res
+        .status(401)
+        .json({ error: "Refresh token expired. Please log in again." });
       return;
     }
-    res.status(500).json({ error: "An error occurred while refreshing tokens." });
+    res
+      .status(500)
+      .json({ error: "An error occurred while refreshing tokens." });
   }
 };
 

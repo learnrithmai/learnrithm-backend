@@ -15,7 +15,7 @@ export const registerUserSchema = {
     method: z.enum(["normal", "google"]),
     image: z.string().optional(),
   }),
-}; 
+};
 
 export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
 

@@ -55,10 +55,10 @@ export const updatePlanSchema = {
     plan: z
       .string()
       .min(8, { message: "Password must be at least 8 characters" }),
-    ExpirationSubscription: z.string().min(4, { message: "Expiration date is required" })
-
+    ExpirationSubscription: z
+      .string()
+      .min(4, { message: "Expiration date is required" }),
   }),
-
 };
 
 export type UpdatePlanBody = z.infer<typeof updatePlanSchema.body>;
