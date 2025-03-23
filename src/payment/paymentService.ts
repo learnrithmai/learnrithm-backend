@@ -14,6 +14,7 @@ import {
   Subscription,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import { addMonthsUtil, addYearsUtil } from "@/utils/paymentUtils";
+import { LemonWebhook } from "./subscription_enum";
 
 /* Configuration */
 const prisma = new PrismaClient();
@@ -102,6 +103,59 @@ export const processNewUser = async (
   };
   // Create the transaction
   return await createTransaction(transactionData);
+};
+
+// Process Transaction for existing User
+export const processExsitingUser = async (
+  subscription: Subscription,
+  variant: LocalProduct
+): Promise<Transaction | null> => {
+  // Get Email and check if User doesn't exist
+  const email: string = subscription.data.attributes.user_email;
+  const transaction: Transaction | null = await getTransactionByEmail(email);
+  if (!transaction) {
+    return null;
+  }
+
+  // Calculate Start Date
+  let startDate: Date;
+  let isTrial: boolean;
+
+  // Case 1: In free trial, then starts from the end of free trial
+  if (subscription.data.attributes.status === LemonWebhook.OnTrial) {
+    const trialEnd: string | null = subscription.data.attributes.trial_ends_at;
+    if (!trialEnd) {
+      return null;
+    }
+    isTrial = true;
+    startDate = new Date(trialEnd);
+  } else {
+    // Case 2: Not in free trial, then starts from now
+    isTrial = false;
+    startDate = new Date();
+  }
+
+  // Calculate End Date
+  let endDate: Date;
+  if (variant.interval === "year") {
+    endDate = addYearsUtil(startDate, 1);
+  } else if (variant.interval === "month") {
+    endDate = addMonthsUtil(startDate, 1);
+  } else {
+    return null;
+  }
+
+  // Construct the Transaction
+  transaction.orderName = variant.name;
+  transaction.orderVariant = variant.variant;
+  transaction.subscriptionEnd = endDate;
+  transaction.subscriptionStart = startDate;
+  transaction.refunded = false;
+  transaction.freeTrial = isTrial;
+  transaction.duration = variant.interval;
+
+  // Update the transaction
+  return await updateTransaction(transaction);
 };
 
 // Create a product in database

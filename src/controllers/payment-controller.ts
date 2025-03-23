@@ -5,6 +5,7 @@
 import {
   createCheckoutData,
   listProductDatabase,
+  processExsitingUser,
   processNewUser,
   searchProductDatabase,
 } from "@/payment/paymentService";
@@ -12,6 +13,7 @@ import { CheckoutUrlInfo } from "@/types/transaction";
 import { Request, Response } from "express";
 import { LocalProduct, Transaction } from "@prisma/client";
 import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
+import { LemonWebhook } from "@/payment/subscription_enum";
 
 export const createPayment = async (req: Request, res: Response) => {
   // No Request Data
@@ -72,14 +74,15 @@ export const processWebhook = async (req: Request, res: Response) => {
     productName,
     variantName
   );
+  // Check if Product exists
   if (!variant) {
     return res.status(400).json({
       error:
         "Product data in Lemon Squeezy and Local DataBase is not sync! Try run syncProducts().",
     });
   }
-  // Check subscription type
-  if (metaDataCopy.meta.event_name === "subscription_created") {
+  // New User
+  if (metaDataCopy.meta.event_name === LemonWebhook.Subscription_Create) {
     // Process the transaction
     const response: Transaction | null = await processNewUser(
       subscription,
@@ -96,6 +99,26 @@ export const processWebhook = async (req: Request, res: Response) => {
     return res
       .status(200)
       .json({ message: "Create transaction for new user", data: response });
+  }
+
+  // Exsiting User: Update the subscription
+  if (metaDataCopy.meta.event_name === LemonWebhook.Subscription_Update) {
+    // Process the transaction
+    const response: Transaction | null = await processExsitingUser(
+      subscription,
+      variant
+    );
+    if (!response) {
+      return res.status(400).json({
+        error:
+          "Can not process transaction. User doesn't exist or Product not valid.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Updated transaction for existing user",
+      data: response,
+    });
   }
   // No operation on any other subscription type
   res.status(200).json({ message: "Successfully received subscription." });
