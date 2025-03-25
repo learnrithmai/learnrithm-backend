@@ -316,25 +316,30 @@ export const forgotPassword = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const { email } = req.body as ForgotPasswordBody;
-  const normalizedEmail = email.toLowerCase();
+  try {
+    const { email } = req.body as ForgotPasswordBody;
+    const normalizedEmail = email.toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail, method: "normal" },
-  });
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail, method: "normal" },
+    });
 
-  if (!user) {
-    res.status(404).json({ error: "User with that email not found" });
-    return;
+    if (!user) {
+      res.status(404).json({ error: "User with that email not found" });
+      return;
+    }
+
+    // Generate reset token and send email using the merged user model
+    const resetPasswordToken = await generateResetPasswordToken(user);
+    await sendResetPasswordEmail(user, resetPasswordToken);
+
+    res
+      .status(200)
+      .json({ message: "Check your email for further instructions" });
+  } catch (error) {
+    console.error("Error in forgotPassword:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  // Generate reset token and send email using the merged user model
-  const resetPasswordToken = await generateResetPasswordToken(user);
-
-  await sendResetPasswordEmail(user, resetPasswordToken);
-  res
-    .status(200)
-    .json({ message: "Check your email for further instructions" });
 };
 
 // ────────────────────────────────────────────────────────────────
