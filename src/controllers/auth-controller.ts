@@ -143,8 +143,9 @@ export const registerUser = async (
 
     await sendRegisterEmail(createdUser);
 
-
-    await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, { email: createdUser.email });
+    await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
+      email: createdUser.email,
+    });
 
     // Build the client user object.
     const clientUser = {
