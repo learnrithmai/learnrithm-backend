@@ -4,6 +4,7 @@
 
 import {
   createCheckoutData,
+  getTransactionByEmail,
   listProductDatabase,
   processExsitingUser,
   processNewUser,
@@ -81,7 +82,7 @@ export const processWebhook = async (req: Request, res: Response) => {
         "Product data in Lemon Squeezy and Local DataBase is not sync! Try run syncProducts().",
     });
   }
-  // New User
+  // Case1: New User
   if (metaDataCopy.meta.event_name === LemonWebhook.Subscription_Create) {
     // Process the transaction
     const response: Transaction | null = await processNewUser(
@@ -101,7 +102,7 @@ export const processWebhook = async (req: Request, res: Response) => {
       .json({ message: "Create transaction for new user", data: response });
   }
 
-  // Exsiting User: Update the subscription
+  // Case2: Exsiting User and Update the subscription
   if (metaDataCopy.meta.event_name === LemonWebhook.Subscription_Update) {
     // Process the transaction
     const response: Transaction | null = await processExsitingUser(
@@ -120,6 +121,23 @@ export const processWebhook = async (req: Request, res: Response) => {
       data: response,
     });
   }
+
+  // Case3: Existing User, cancelled the subscription
+
   // No operation on any other subscription type
   res.status(200).json({ message: "Successfully received subscription." });
+};
+
+export const getPaymentStatus = async (req: Request, res: Response) => {
+  // Get Payment Detail from Request
+  const email: string | null = req.body.email;
+  if (!email) {
+    return res.status(400).json({ error: "No Email received" });
+  }
+  // Get Transaction
+  const transaction: Transaction | null = await getTransactionByEmail(email);
+  if (!transaction) {
+    return res.status(400).json({ error: "Payment Detail Notfound" });
+  }
+  res.status(200).json({ message: transaction });
 };

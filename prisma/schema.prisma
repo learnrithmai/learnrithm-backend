@@ -139,6 +139,7 @@ model Transaction {
   updatedAt         DateTime @updatedAt
   refunded          Boolean
   freeTrial         Boolean
+  trialEndsAt     DateTime
 }
 
 

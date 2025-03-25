@@ -7,6 +7,7 @@ export interface TransactionData {
   orderVariant: string;
   refunded: boolean;
   freeTrial: boolean;
+  trialEndsAt: Date;
 }
 
 export interface CheckoutUrlInfo {

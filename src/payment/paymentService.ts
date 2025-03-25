@@ -48,6 +48,7 @@ export const updateTransaction = async (
       orderVariant: data.orderVariant,
       refunded: data.refunded,
       freeTrial: data.freeTrial,
+      trialEndsAt: data.trialEndsAt,
     },
   });
 };
@@ -83,7 +84,6 @@ export const processNewUser = async (
     return null;
   }
   // Calculate Start Date and End Date
-  const startDate: Date = new Date();
   const trialEndTime: string | null =
     subscription.data.attributes.trial_ends_at;
   if (!trialEndTime) {
@@ -94,12 +94,13 @@ export const processNewUser = async (
   const transactionData: TransactionData = {
     orderName: variant.name,
     orderVariant: variant.variant,
-    subscriptionStart: startDate,
+    subscriptionStart: endDate,
     subscriptionEnd: endDate,
     email: email,
     duration: variant.interval,
     refunded: false,
     freeTrial: true,
+    trialEndsAt: endDate,
   };
   // Create the transaction
   return await createTransaction(transactionData);

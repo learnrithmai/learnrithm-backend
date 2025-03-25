@@ -3,6 +3,7 @@
 
 import {
   createPayment,
+  getPaymentStatus,
   processWebhook,
 } from "@/controllers/payment-controller";
 import express, { Router, Request, Response } from "express";
@@ -16,6 +17,10 @@ router.post("/createUrl", (req: Request, res: Response) => {
 
 router.post("/webhook", (req: Request, res: Response) => {
   processWebhook(req, res);
+});
+
+router.post("/checkStatus", (req: Request, res: Response) => {
+  getPaymentStatus(req, res);
 });
 
 export default router;
