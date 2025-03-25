@@ -161,3 +161,39 @@ export const sendVerificationEmail = async (
     `An e-mail has been sent to ${user.email} with further instructions.`,
   );
 };
+
+/**
+ * Send welcome email upon user registration
+ * @param {User} user
+ * @returns {Promise<void>}
+ */
+export const sendRegisterEmail = async (user: User): Promise<void> => {
+  const subject = "Welcome to Learnrithm AI";
+  const body = `<img src="cid:logo.png" alt="logo"/>
+    <h1>Welcome ${user.Name}!</h1>
+    <p>Thank you for registering with Learnrithm AI. We're excited to have you on board!</p>
+    <p>If you have any questions, feel free to reach out to our support team.</p>
+    <p>Best regards,<br/>The Learnrithm AI Team</p>`;
+
+  const attachments: Attachment[] = [
+    {
+      filename: "logo.svg",
+      path: "public/images/Learnrithm.png",
+      cid: "logo.png",
+    },
+  ];
+
+  const mailOptions: SendMailOptions = {
+    from: ENV.ZOHO_SMTP_USERNAME
+      ? `Learnrithm AI <${ENV.ZOHO_SMTP_USERNAME}>`
+      : "support@learnrithm.com",
+    to: user.email,
+    subject,
+    html: body,
+    attachments,
+  };
+
+  const mailInfo = await sendEmail(mailOptions);
+  console.log("Message: %s", JSON.stringify(mailInfo));
+  logger.info(`A welcome email has been sent to ${user.email}`);
+};

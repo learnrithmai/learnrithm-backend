@@ -7,6 +7,7 @@ import {
 } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
 import {
+  sendRegisterEmail,
   sendResetPasswordEmail,
   sendSuccessResetPasswordEmail,
   sendVerificationEmail as sendVerificationEmailUtil,
@@ -26,7 +27,9 @@ import {
   ResetPasswordQuery,
   VerifyEmailQuery,
 } from "@/validations/authSchema";
+import { ENV } from "@/validations/envSchema";
 import { TokenType } from "@prisma/client";
+import axios from "axios";
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import geoip from "geoip-lite";
@@ -137,6 +140,11 @@ export const registerUser = async (
 
       return { createdUser, tokens };
     });
+
+    await sendRegisterEmail(createdUser);
+
+
+    await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, { email: createdUser.email });
 
     // Build the client user object.
     const clientUser = {
@@ -401,24 +409,34 @@ export const sendVerificationEmail = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  const user = await prisma.user.findUnique({
-    where: { email: req.user?.email, method: "normal" },
-  });
-  if (!user) {
-    res.status(404).json({ error: "User with that email not found" });
-    return;
-  }
+  try {
+    // Ensure that the request body is parsed JSON
+    const { email } = req.body;
 
-  if (!req.user) {
-    res.status(400).json({ error: "User information is missing" });
-    return;
-  }
-  const verifyEmailToken = await generateVerifyEmailToken(req.user);
+    if (!email) {
+      res.status(400).json({ error: "User information is missing" });
+      return;
+    }
 
-  await sendVerificationEmailUtil(user, verifyEmailToken);
-  res
-    .status(200)
-    .json({ message: "Check your email for further instructions" });
+    const user = await prisma.user.findUnique({
+      where: { email, method: "normal" },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User with that email not found" });
+      return;
+    }
+
+    const verifyEmailToken = await generateVerifyEmailToken(user);
+
+    await sendVerificationEmailUtil(user, verifyEmailToken);
+    res
+      .status(200)
+      .json({ message: "Check your email for further instructions" });
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 // ────────────────────────────────────────────────────────────────

@@ -115,7 +115,9 @@ const verifyTokenHelper = (
   return new Promise((resolve, reject) => {
     jwt.verify(token, secret, (err, decodedPayload) => {
       if (err) {
-        return reject(createHttpError.Unauthorized("Token verification failed"));
+        return reject(
+          createHttpError.Unauthorized("Token verification failed"),
+        );
       }
       resolve(decodedPayload as JwtPayload);
     });
