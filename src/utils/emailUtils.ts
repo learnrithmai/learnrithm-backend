@@ -1,10 +1,14 @@
 import { transporter } from "@/config/email/nodemailConfig";
 import logger from "@/utils/chalkLogger";
 import { ENV } from "@/validations/envSchema";
-import { User } from "@prisma/client";
 import { format } from "date-fns";
 import { SendMailOptions } from "nodemailer";
 import { Attachment } from "nodemailer/lib/mailer";
+
+type User = {
+  Name: string;
+  email: string;
+};
 
 // @ts-expect-error : test is not defined in process.env
 if (ENV.NODE_ENV !== "test") {
@@ -67,6 +71,7 @@ export const sendResetPasswordEmail = async (
     html: body,
     attachments,
   };
+
   const mailInfo = await sendEmail(mailOptions);
   console.log("Message: %s", JSON.stringify(mailInfo));
   logger.info(
@@ -155,4 +160,40 @@ export const sendVerificationEmail = async (
   logger.info(
     `An e-mail has been sent to ${user.email} with further instructions.`,
   );
+};
+
+/**
+ * Send welcome email upon user registration
+ * @param {User} user
+ * @returns {Promise<void>}
+ */
+export const sendRegisterEmail = async (user: User): Promise<void> => {
+  const subject = "Welcome to Learnrithm AI";
+  const body = `<img src="cid:logo.png" alt="logo"/>
+    <h1>Welcome ${user.Name}!</h1>
+    <p>Thank you for registering with Learnrithm AI. We're excited to have you on board!</p>
+    <p>If you have any questions, feel free to reach out to our support team.</p>
+    <p>Best regards,<br/>The Learnrithm AI Team</p>`;
+
+  const attachments: Attachment[] = [
+    {
+      filename: "logo.svg",
+      path: "public/images/Learnrithm.png",
+      cid: "logo.png",
+    },
+  ];
+
+  const mailOptions: SendMailOptions = {
+    from: ENV.ZOHO_SMTP_USERNAME
+      ? `Learnrithm AI <${ENV.ZOHO_SMTP_USERNAME}>`
+      : "support@learnrithm.com",
+    to: user.email,
+    subject,
+    html: body,
+    attachments,
+  };
+
+  const mailInfo = await sendEmail(mailOptions);
+  console.log("Message: %s", JSON.stringify(mailInfo));
+  logger.info(`A welcome email has been sent to ${user.email}`);
 };

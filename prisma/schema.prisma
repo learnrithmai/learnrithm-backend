@@ -19,24 +19,25 @@ generator client {
 
 // filepath: prisma/schema.prisma
 model User {
-  id                     String    @id @default(uuid()) @map("_id")
-  email                  String    @unique
-  password               String
-  createdAt              DateTime? @default(now())
-  Name                   String?
-  lastLogin              DateTime?
-  imgThumbnail           String?
-  plan                   String?
-  ExpirationSubscription DateTime?
-  birthDate              DateTime?
-  phoneNumber            String?
-  institution            String?
-  linkedin               String?
-  instagram              String?
-  facebook               String?
-  x                      String?
-  isVerified             Boolean   @default(false)
-  country                String? // Add the country field here
+  id                         String    @id @map("_id") @default(auto()) @db.ObjectId
+  email                      String    @unique
+  password                   String?
+  method                     AuthType
+  isVerified                 Boolean   @default(false)
+  Name                       String
+  birthDate                  DateTime?
+  country                    String
+  lastLogin                  DateTime?
+  institution                String?
+  phoneNumber                String?   
+  linkedin                   String?   
+  instagram                  String?
+  facebook                   String?
+  x                          String?
+  imgThumbnail               String?
+  plan                       planType? @default(trial_monthly)
+  ExpirationSubscription     DateTime?
+  createdAt                  DateTime? @default(now())
 }
 
 
@@ -86,12 +87,14 @@ model referralCode {
 //////////////////////////
 
 model Token {
-  id                   String   @id @map("_id") @default(auto()) @db.ObjectId
-  userId               String   @unique
-  email                String   @unique
-  token                String
-  tokenExpires         DateTime @map("tokenExpires") @default(now())
-  tokenType            TokenType   
+  id                      String    @id @map("_id") @default(auto()) @db.ObjectId
+  token                   String
+  email                   String
+  userId                  String
+  tokenExpires            DateTime
+  tokenType               TokenType
+
+  @@unique([userId, tokenType], name: "userId_tokenType")
 }
 
 model Streaker {
@@ -199,4 +202,9 @@ enum ReferringType {
   trial_yearly
   charged_monthly
   charged_yearly
+}
+
+enum AuthType {
+  google
+  normal
 }

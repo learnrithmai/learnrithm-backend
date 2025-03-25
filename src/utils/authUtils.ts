@@ -32,7 +32,7 @@ export const verifyEmail = async (verifyEmailToken: string): Promise<void> => {
       TokenType.email_validation,
     );
     const user = await prisma.user.findUnique({
-      where: { id: verifyEmailTokenDoc.userId },
+      where: { id: verifyEmailTokenDoc.userId, method: "normal" },
     });
     if (!user) {
       throw new ApiError(404, "No users found");
