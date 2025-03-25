@@ -31,7 +31,8 @@ export const envSchema = z.object({
     (x) => (x ? Number(x) : undefined),
     numberSchema.min(1).max(65536).default(27017), // MongoDB default port
   ),
-
+  OPENAI_API_KEY: stringNonEmpty(),
+  OPENAI_MODEL: z.string().optional(),
   // Environment
   NODE_ENV: z.enum(["development", "production"]).default("development"),
   ALLOWED_ORIGINS: z.preprocess((val) => {

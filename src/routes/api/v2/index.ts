@@ -13,7 +13,6 @@ import user from "./user";
 
 const router = Router();
 
-//* --------  Swagger docs -----------------
 const specs = swaggerJsdoc(swaggerOptions);
 
 if (isDev) {
