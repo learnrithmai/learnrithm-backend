@@ -3,7 +3,7 @@
 
 /* Usage */
 
-import express, { Request, Response } from "express";
+import express from "express";
 import PaymentRouter from "./routes/api/v1/payment";
 
 const app: express.Application = express();
