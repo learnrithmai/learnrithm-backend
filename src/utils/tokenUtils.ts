@@ -83,6 +83,8 @@ export const generateToken = (
  * @param type - Token type (access, refresh, etc.)
  * @param email - The user's email
  * @returns The created Token document.
+ *
+ *
  */
 export const saveToken = async (
   token: string,
