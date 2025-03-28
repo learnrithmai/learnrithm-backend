@@ -25,8 +25,9 @@ export const asyncWrapper = (
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<unknown> => {
-    const fnReturn = fn(req, res, next);
-    return Promise.resolve(fnReturn).catch(next);
+  ): Promise<void> => {
+    return Promise.resolve(fn(req, res, next))
+      .then(() => undefined)
+      .catch(next);
   };
 };

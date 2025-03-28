@@ -1,6 +1,7 @@
 import { tokenTypes } from "@/config/const";
 import prisma from "@/config/db/prisma";
 import { getCookieOptions } from "@/config/security/cookieOptions";
+import { asyncWrapper } from "@/middleware/asyncWrapper";
 import {
   isPasswordMatch,
   verifyEmail as verifyEmailUtil,
@@ -38,7 +39,7 @@ import geoip from "geoip-lite";
 // REGISTER USER
 // ────────────────────────────────────────────────────────────────
 
-export const registerUser = async (
+export const registerUser = asyncWrapper(async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -175,13 +176,13 @@ export const registerUser = async (
       details: error instanceof Error ? error.message : error,
     });
   }
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // LOGIN
 // ────────────────────────────────────────────────────────────────
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body as LoginBody;
   const normalizedIdentifier = email.toLowerCase();
 
@@ -231,13 +232,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     user,
     accessToken: tokens.access,
   });
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // LOGOUT
 // ────────────────────────────────────────────────────────────────
 
-export const logout = async (req: Request, res: Response): Promise<void> => {
+export const logout = asyncWrapper(async (req: Request, res: Response): Promise<void> => {
   const { jwt: refreshToken } = req.cookies;
 
   if (!refreshToken) {
@@ -262,13 +263,13 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
   res.clearCookie("jwt", getCookieOptions(refreshTokenDoc.tokenExpires));
   res.status(204).send();
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // REFRESH TOKENS
 // ────────────────────────────────────────────────────────────────
 
-export const refreshTokens = async (
+export const refreshTokens = asyncWrapper(async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -315,13 +316,13 @@ export const refreshTokens = async (
       .status(500)
       .json({ error: "An error occurred while refreshing tokens." });
   }
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // FORGOT PASSWORD
 // ────────────────────────────────────────────────────────────────
 
-export const forgotPassword = async (
+export const forgotPassword = asyncWrapper(async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -349,13 +350,13 @@ export const forgotPassword = async (
     console.error("Error in forgotPassword:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // RESET PASSWORD
 // ────────────────────────────────────────────────────────────────
 
-export const resetPassword = async (
+export const resetPassword = asyncWrapper(async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -400,13 +401,13 @@ export const resetPassword = async (
   res
     .status(200)
     .json({ message: "Your password has been changed successfully" });
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // SEND VERIFICATION EMAIL
 // ────────────────────────────────────────────────────────────────
 
-export const sendVerificationEmail = async (
+export const sendVerificationEmail = asyncWrapper(async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -438,17 +439,17 @@ export const sendVerificationEmail = async (
     console.error("Error sending verification email:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
-};
+});
 
 // ────────────────────────────────────────────────────────────────
 // VERIFY EMAIL
 // ────────────────────────────────────────────────────────────────
 
-export const verifyEmail = async (
+export const verifyEmail = asyncWrapper(async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   const { token } = req.query as VerifyEmailQuery;
   await verifyEmailUtil(token);
   res.status(204).send();
-};
+});

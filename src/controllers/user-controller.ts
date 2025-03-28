@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { hash } from "bcryptjs";
 import prisma from "@/config/db/prisma";
+import { asyncWrapper } from "@/middleware/asyncWrapper";
 
 /**
  * Get a single user by ID.
  */
 
-export const getUser = async (
+export const getUser = asyncWrapper(async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -32,13 +33,13 @@ export const getUser = async (
   } catch (error) {
     next(error);
   }
-};
+})
 
 /**
  * Update an existing user information
  */
 
-export const updateUserInfo = async (
+export const updateUserInfo = asyncWrapper(async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -114,13 +115,13 @@ export const updateUserInfo = async (
   } catch (error) {
     next(error);
   }
-};
+});
 
 /**
  * Update an existing user Password
  */
 
-export const UpdateUserPassword = async (
+export const UpdateUserPassword = asyncWrapper(async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -169,13 +170,13 @@ export const UpdateUserPassword = async (
   } catch (error) {
     next(error);
   }
-};
+})
 
 /**
  * Update an existing user Plan
  */
 
-export const updateUserPlan = async (
+export const updateUserPlan = asyncWrapper(async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -225,4 +226,4 @@ export const updateUserPlan = async (
   } catch (error) {
     next(error);
   }
-};
+})

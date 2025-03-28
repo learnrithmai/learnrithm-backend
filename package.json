@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ts": "tsx --test \"**/*.test.ts\"",
-    "test:watch:ts": "tsx --test --watch \"**/*.test.ts\"",
+    "test:watch:ts": "tsx --test --waùtch \"**/*.test.ts\"",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --fix --quiet",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
