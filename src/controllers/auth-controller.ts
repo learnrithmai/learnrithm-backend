@@ -244,11 +244,9 @@ export const logout = asyncWrapper(
     const { jwt: refreshToken } = req.cookies;
 
     if (!refreshToken) {
-      res
-        .status(204)
-        .json({
-          success: "Refresh token not found in cookies, logout success",
-        });
+      res.status(204).json({
+        success: "Refresh token not found in cookies, logout success",
+      });
       return;
     }
 
