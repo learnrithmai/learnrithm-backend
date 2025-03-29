@@ -29,19 +29,3 @@ export const roles: string[] = Object.keys(allRoles);
 export const roleRights: Map<string, string[]> = new Map(
   Object.entries(allRoles),
 );
-
-// for token types
-type TokenTypes = {
-  ACCESS: string;
-  REFRESH: string;
-  RESET_PASSWORD: string;
-  VERIFY_EMAIL: string;
-};
-
-// for token types
-export const tokenTypes: TokenTypes = {
-  ACCESS: "access",
-  REFRESH: "refresh",
-  RESET_PASSWORD: "password_reset",
-  VERIFY_EMAIL: "email_validation",
-};

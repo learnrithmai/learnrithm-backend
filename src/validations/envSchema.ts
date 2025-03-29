@@ -90,7 +90,6 @@ export const envSchema = z.object({
     (x) => (x ? Number(x) : undefined),
     numberSchema.min(1).default(10),
   ),
-
   // SMTP Configuration
   ZOHO_SMTP_HOST: stringNonEmpty().default("smtp.zoho.com"),
   ZOHO_SMTP_PORT: z.preprocess(

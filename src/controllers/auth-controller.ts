@@ -1,10 +1,8 @@
-import { tokenTypes } from "@/config/const";
 import prisma from "@/config/db/prisma";
 import { getCookieOptions } from "@/config/security/cookieOptions";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
 import {
   isPasswordMatch,
-  verifyEmail as verifyEmailUtil,
 } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
 import {
@@ -253,7 +251,7 @@ export const logout = asyncWrapper(
     const refreshTokenDoc = await prisma.token.findFirst({
       where: {
         token: refreshToken,
-        tokenType: tokenTypes.REFRESH as TokenType,
+        tokenType: TokenType.email_validation,
       },
     });
 
@@ -284,7 +282,7 @@ export const refreshTokens = asyncWrapper(
     try {
       refreshTokenDoc = await verifyToken(
         refreshToken,
-        tokenTypes.REFRESH as TokenType,
+        TokenType.refresh,
       );
       const user = await prisma.user.findUnique({
         where: { id: refreshTokenDoc.userId, method: "normal" },
@@ -329,6 +327,12 @@ export const forgotPassword = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { email } = req.body as ForgotPasswordBody;
+
+      if (!email) {
+        res.status(400).json({ error: "User information is missing" });
+        return;
+      }
+
       const normalizedEmail = email.toLowerCase();
 
       const user = await prisma.user.findUnique({
@@ -365,7 +369,7 @@ export const resetPassword = asyncWrapper(
 
     const resetTokenDoc = await verifyToken(
       resetToken,
-      tokenTypes.RESET_PASSWORD as TokenType,
+      TokenType.password_reset,
     );
     if (!resetTokenDoc) {
       res.status(404).json({
@@ -393,7 +397,7 @@ export const resetPassword = asyncWrapper(
     await prisma.token.deleteMany({
       where: {
         userId: user.id,
-        tokenType: tokenTypes.RESET_PASSWORD as TokenType,
+        tokenType: TokenType.password_reset,
       },
     });
 
@@ -423,6 +427,7 @@ export const sendVerificationEmail = asyncWrapper(
         where: { email, method: "normal" },
       });
 
+
       if (!user) {
         res.status(404).json({ error: "User with that email not found" });
         return;
@@ -447,8 +452,37 @@ export const sendVerificationEmail = asyncWrapper(
 
 export const verifyEmail = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    const { token } = req.query as VerifyEmailQuery;
-    await verifyEmailUtil(token);
+    const { token: verifyEmailToken } = req.query as VerifyEmailQuery;
+    
+    const verifyEmailTokenDoc = await verifyToken(
+      verifyEmailToken,
+      TokenType.email_validation,
+    );
+    if (!verifyEmailTokenDoc) {
+      res.status(404).json({
+        error:
+          "The verification email token you provided is either invalid or has expired. Please request a new one.",
+      });
+      return;
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: verifyEmailTokenDoc.userId, method: "normal" },
+    });
+    if (!user) {
+      res.status(404).json({ error: "No user found with that token" });
+      return;
+    }
+
+    // Update the merged user model directly
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
+    // Delete any existing email verification tokens
+    await prisma.token.deleteMany({
+      where: { userId: user.id, tokenType: TokenType.email_validation },
+    });
     res.status(204).send();
   },
 );
