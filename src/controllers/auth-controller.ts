@@ -1,9 +1,7 @@
 import prisma from "@/config/db/prisma";
 import { getCookieOptions } from "@/config/security/cookieOptions";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
-import {
-  isPasswordMatch,
-} from "@/utils/authUtils";
+import { isPasswordMatch } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
 import {
   sendRegisterEmail,
@@ -280,10 +278,7 @@ export const refreshTokens = asyncWrapper(
     }
     let refreshTokenDoc;
     try {
-      refreshTokenDoc = await verifyToken(
-        refreshToken,
-        TokenType.refresh,
-      );
+      refreshTokenDoc = await verifyToken(refreshToken, TokenType.refresh);
       const user = await prisma.user.findUnique({
         where: { id: refreshTokenDoc.userId, method: "normal" },
       });
@@ -427,7 +422,6 @@ export const sendVerificationEmail = asyncWrapper(
         where: { email, method: "normal" },
       });
 
-
       if (!user) {
         res.status(404).json({ error: "User with that email not found" });
         return;
@@ -453,7 +447,7 @@ export const sendVerificationEmail = asyncWrapper(
 export const verifyEmail = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     const { token: verifyEmailToken } = req.query as VerifyEmailQuery;
-    
+
     const verifyEmailTokenDoc = await verifyToken(
       verifyEmailToken,
       TokenType.email_validation,
@@ -465,7 +459,7 @@ export const verifyEmail = asyncWrapper(
       });
       return;
     }
-    
+
     const user = await prisma.user.findUnique({
       where: { id: verifyEmailTokenDoc.userId, method: "normal" },
     });
