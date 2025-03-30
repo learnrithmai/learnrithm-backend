@@ -120,11 +120,39 @@ model Transaction {
   duration          String
   subscriptionStart DateTime
   subscriptionEnd   DateTime
-  orderId           String
+  orderName         String
+  orderVariant      String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   refunded          Boolean
+  freeTrial         Boolean
+  trialEndsAt     DateTime
 }
+
+
+//////////////////////////
+//   Payment models     //
+//////////////////////////
+
+model LocalProduct {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  name              String   
+  nameId            String
+  variant           String
+  variantId         String
+  interval          String
+  price             Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  freeTrailAmount   Int
+
+
+  @@unique([name, variant])
+}
+
+
+
+
 
 //////////////////////////
 //   Quiz Game Models   //
