@@ -5,9 +5,9 @@ import {
   VerifiedCallback,
 } from "passport-jwt";
 import { ENV } from "../../validations/envSchema";
-import { tokenTypes } from "../../config/const";
 import { JwtPayload } from "jsonwebtoken";
 import prisma from "../../config/db/prisma";
+import { TokenType } from "@prisma/client";
 
 /**
  * JWT options for passport strategy.
@@ -42,7 +42,7 @@ const jwtVerify = async (
   done: VerifiedCallback,
 ): Promise<void> => {
   try {
-    if (payload.type !== tokenTypes.ACCESS) {
+    if (payload.type !== TokenType.access) {
       throw new Error("Invalid token type");
     }
     const user = await prisma.user.findUnique({

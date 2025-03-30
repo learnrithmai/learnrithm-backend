@@ -413,10 +413,10 @@ export function formatPath(path: Array<string | number>): string {
  * @param {number} port - The port value to replace `${PORT}` with.
  * @returns {string} The preprocessed URL string.
  * @example
- * const url = "http://localhost:${PORT}/api/v1";
+ * const url = "http://localhost:${PORT}/api/v2";
  * const port = 3000;
  * const preprocessedUrl = preprocessUrl(url, port);
- * console.log(preprocessedUrl); // http://localhost:3000/api/v1
+ * console.log(preprocessedUrl); // http://localhost:3000/api/v2
  */
 export const preprocessUrl = (url: string, port: number): string =>
   url.replace("${PORT}", port.toString());

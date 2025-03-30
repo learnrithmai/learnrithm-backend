@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { isDev } from "@/config/const";
 import { swaggerOptions } from "@/config/swagger-docs/swaggerConfig";
 import { multerErrorHandler } from "@/middleware/multer/multerErrorHandler";
@@ -14,7 +13,6 @@ import user from "./user";
 
 const router = Router();
 
-//* --------  Swagger docs -----------------
 const specs = swaggerJsdoc(swaggerOptions);
 
 if (isDev) {

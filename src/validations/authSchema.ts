@@ -9,15 +9,29 @@ export const registerUserSchema = {
   body: z.object({
     Name: z.string().min(1, { message: "Name is required" }),
     email: emailSchema,
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-    country: CountrySchema,
+    password: z.string().optional(),
+    country: CountrySchema.optional(),
     referralCode: z.string().optional(),
+    method: z.enum(["normal", "google"]),
+    image: z.string().optional(),
   }),
 };
 
 export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
+
+export type ResponseUserSchema = {
+  id: string;
+  Name: string;
+  email: string;
+  method: string;
+  lastLogin: string;
+  imgThumbnail?: string;
+  token: {
+    accessToken: string;
+    refreshToken: string;
+    tokenExpiry: number;
+  };
+};
 
 // ────────────────────────────────────────────────────────────────
 // Login Schema
@@ -25,7 +39,7 @@ export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
 
 export const loginSchema = {
   body: z.object({
-    identifier: z.string().min(1, { message: "Identifier is required" }),
+    email: z.string().min(1, { message: "Identifier is required" }),
     password: z
       .string()
       .min(6, { message: "Password must be at least 6 characters" }),

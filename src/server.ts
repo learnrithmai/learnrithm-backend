@@ -2,6 +2,9 @@ import express, { Application, Request, Response } from "express";
 import dotenv from "dotenv";
 import path, { join } from "node:path";
 import passport from "passport";
+import { swaggerOptions } from "./config/swagger-docs/swaggerConfig";
+import swaggerUi from "swagger-ui-express";
+import swaggerJSDoc from "swagger-jsdoc";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
@@ -16,8 +19,12 @@ import { jwtStrategy } from "./config/auth/passportjsConfig";
 import prisma from "./config/db/prisma";
 import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
-import apiV1Routes from "@routes/api/v1";
+import apiV1Routes from "@routes/api/v2";
 import { errorHandler } from "./middleware/errorHandler";
+import {
+  morganErrorHandler,
+  morganSuccessHandler,
+} from "./config/logging/morganConfig";
 
 dotenv.config();
 
@@ -25,10 +32,16 @@ const app: Application = express();
 
 // Trust Proxy for Proxies (Heroku, Render.com, Docker behind Nginx, etc)
 // https://stackoverflow.com/questions/40459511/in-express-js-req-protocol-is-not-picking-up-https-for-my-secure-link-it-alwa
-// app.set("trust proxy", true)
+app.set("trust proxy", true);
 
 // Set security HTTP headers
 app.use(helmet(helmetOptions));
+
+// Generate Swagger specification from your config
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
+
+// Mount Swagger UI at /api-docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //? Morgan console logger
 
@@ -36,8 +49,8 @@ app.use(helmet(helmetOptions));
 app.use(morgan("dev"));
 
 //* 2. morgan logger with winston
-// app.use(morganSuccessHandler);
-// app.use(morganErrorHandler);
+app.use(morganSuccessHandler);
+app.use(morganErrorHandler);
 
 // Handle options credentials check - before CORS!
 // Set the "Access-Control-Allow-Credentials" header if the request origin is allowed.
@@ -77,15 +90,15 @@ app.use(passport.initialize());
 passport.use("jwt", jwtStrategy);
 
 // Serve static files from the "static" folder
-app.use(express.static(path.join(__dirname, "../public", "static")));
+app.use(express.static(path.join(__dirname, "../public/static")));
 
 // Default route - serve the HTML page with the image and text
 app.get("/", (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "../public", "static", "index.html"));
+  res.sendFile(path.join(__dirname, "../public/static/index.html"));
 });
 
 //APIs Consume
-app.use("/api/v1", apiV1Routes);
+app.use("/api/v2", apiV1Routes);
 
 // global error handling
 app.use(errorHandler);

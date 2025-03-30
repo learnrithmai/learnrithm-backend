@@ -1,214 +1,221 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { hash } from "bcryptjs";
-import { asyncWrapper } from "@/middleware/asyncWrapper";
 import prisma from "@/config/db/prisma";
+import { asyncWrapper } from "@/middleware/asyncWrapper";
+
 /**
  * Get a single user by ID.
  */
-export const getUser = asyncWrapper(async (req: Request, res: Response) => {
-  const { id } = req.params;
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-  });
+export const getUser = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = req.params;
 
-  if (!user) {
-    return res.status(404).json({ errorMsg: "User not found" });
-  }
+      console.log(email);
 
-  res.status(200).json({
-    success: `User ${user.email} fetched successfully!`,
-    user,
-  });
-});
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        res.status(404).json({ errorMsg: "User not found" });
+        return;
+      }
+
+      res.status(200).json({
+        success: `User ${user.email} fetched successfully!`,
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
- * Get all users with optional pagination and search.
+ * Update an existing user information
  */
-export const getAllUsers = asyncWrapper(async (req: Request, res: Response) => {
-  // Default pagination parameters
-  const { page = 1, limit = 10, search } = req.query;
-  const pageNum = Number(page);
-  const limitNum = Number(limit);
-  const offsetNum = (pageNum - 1) * limitNum;
 
-  // Build query filter (search by email or firstName)
-  const query: {
-    OR?: {
-      email?: { contains: string; mode: "insensitive" };
-      firstName?: { contains: string; mode: "insensitive" };
-    }[];
-  } = {};
-  if (search) {
-    const escapedSearch = search
-      .toString()
-      .replace(/[$()*+.?[\\\]^{|}]/g, "\\$&");
-    query.OR = [
-      { email: { contains: escapedSearch, mode: "insensitive" } },
-      { firstName: { contains: escapedSearch, mode: "insensitive" } },
-    ];
-  }
+export const updateUserInfo = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const {
+        id,
+        name,
+        lastLogin,
+        imgThumbnail,
+        birthDate,
+        phoneNumber,
+        institution,
+        linkedin,
+        instagram,
+        facebook,
+        x,
+      } = req.body;
 
-  const users = await prisma.user.findMany({
-    where: query,
-    skip: offsetNum,
-    take: limitNum,
-    orderBy: { createdAt: "desc" },
-  });
+      // Validate that the user ID is provided
+      if (!id) {
+        res.status(400).json({ errorMsg: "User ID is required" });
+        return;
+      }
 
-  const totalUsers = await prisma.user.count({ where: query });
+      // Check if there's data to update
+      if (
+        !name &&
+        !lastLogin &&
+        !imgThumbnail &&
+        !birthDate &&
+        !phoneNumber &&
+        !institution &&
+        !linkedin &&
+        !instagram &&
+        !facebook &&
+        !x
+      ) {
+        res.status(400).json({ errorMsg: "No data to update" });
+        return;
+      }
 
-  if (!users || users.length === 0) {
-    return res.status(404).json({ errorMsg: "No users found" });
-  }
+      // Verify the user exists
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+      if (!user) {
+        res.status(404).json({ errorMsg: "User not found" });
+        return;
+      }
 
-  res.status(200).json({
-    success: "Users fetched successfully!",
-    data: {
-      total_users: totalUsers,
-      users,
-    },
-  });
-});
+      // Update the merged user record
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          Name: name ?? user.Name,
+          lastLogin: lastLogin ?? user.lastLogin,
+          imgThumbnail: imgThumbnail ?? user.imgThumbnail,
+          birthDate: birthDate ?? user.birthDate,
+          phoneNumber: phoneNumber ?? user.phoneNumber,
+          institution: institution ?? user.institution,
+          linkedin: linkedin ?? user.linkedin,
+          instagram: instagram ?? user.instagram,
+          facebook: facebook ?? user.facebook,
+          x: x ?? user.x,
+        },
+      });
+
+      res.status(200).json({
+        success: `User ${updatedUser.email} updated successfully`,
+        user: updatedUser,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 /**
- * Update an existing user.
- * Updates the User record and, if provided, the password in the UserAuth record.
+ * Update an existing user Password
  */
-export const updateUser = asyncWrapper(async (req: Request, res: Response) => {
-  const { updateType } = req.params;
-  //Update By Type
-  if (updateType === "UpdateInfo") {
-    const {
-      name,
-      lastLogin,
-      imgThumbnail,
-      plan,
-      id,
-      ExpirationSubscription,
-      birthDate,
-      phoneNumber,
-      institution,
-      linkedin,
-      instagram,
-      facebook,
-      x,
-    } = req.body;
 
-    // Check if the user ID is provided
-    if (!id) {
-      return res.status(400).json({ errorMsg: "User ID is required" });
+export const UpdateUserPassword = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id, password, newPassword } = req.body;
+
+      // Validate input
+      if (!id) {
+        res.status(400).json({ errorMsg: "User ID is required" });
+        return;
+      }
+      if (!password || !newPassword) {
+        res.status(400).json({ errorMsg: "Passwords is required" });
+        return;
+      }
+
+      // Verify the user exists
+      const user = await prisma.user.findUnique({
+        where: { id, method: "normal" },
+        select: { password: true },
+      });
+
+      if (!user) {
+        res.status(404).json({ errorMsg: "User not found" });
+        return;
+      }
+
+      if (user?.password !== password) {
+        res.status(400).json({ errorMsg: "Password is incorrect" });
+        return;
+      }
+
+      // Hash the new password
+      const hashedPassword = await hash(newPassword, 10);
+
+      // Update the password field in the merged user model
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: { password: hashedPassword },
+      });
+
+      res.status(200).json({
+        success: `User ${updatedUser.email} password updated successfully`,
+      });
+    } catch (error) {
+      next(error);
     }
+  },
+);
 
-    // Check if there is any data to update
-    if (
-      !name &&
-      !lastLogin &&
-      !imgThumbnail &&
-      !plan &&
-      !ExpirationSubscription
-    ) {
-      return res.status(400).json({ errorMsg: "No data to update" });
-    }
+/**
+ * Update an existing user Plan
+ */
 
-    //check the plan with Expiration date
-    if (plan && !ExpirationSubscription) {
-      return res
-        .status(400)
-        .json({ errorMsg: "Expiration Subscription is required" });
-    }
+export const updateUserPlan = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id, plan, ExpirationSubscription } = req.body;
 
-    // Check if the user exists in the User model
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-    if (!user) {
-      return res.status(404).json({ errorMsg: "User not found" });
-    }
+      // Validate that the user ID is provided
+      if (!id) {
+        res.status(400).json({ errorMsg: "User ID is required" });
+        return;
+      }
 
-    if (plan || imgThumbnail || name) {
-      // Update the User record
-      await prisma.userInfo.update({
+      // If plan is provided, then ExpirationSubscription must be provided as well
+      if (!plan || !ExpirationSubscription) {
+        res.status(400).json({
+          errorMsg:
+            "plan and Expiration Subscription is required when updating user plan",
+        });
+        return;
+      }
+
+      // Verify the user exists
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        res.status(404).json({ errorMsg: "User not found" });
+        return;
+      }
+
+      // Update the user plan
+      const updatedUser = await prisma.user.update({
         where: { id },
         data: {
-          Name: name,
-          lastLogin,
-          imgThumbnail,
-          plan,
+          plan: plan ?? user.plan,
+          ExpirationSubscription:
+            ExpirationSubscription ?? user.ExpirationSubscription,
         },
       });
 
-      await prisma.userDetails.update({
-        where: { id },
-        data: {
-          Name: name,
-          lastLogin,
-          imgThumbnail,
-          plan,
-          ExpirationSubscription: ExpirationSubscription,
-          phoneNumber,
-          birthDate,
-          institution,
-          linkedin,
-          instagram,
-          facebook,
-          x,
-        },
+      res.status(200).json({
+        success: `User ${updatedUser.email}'s plan updated successfully`,
+        user: updatedUser,
       });
-    } else {
-      await prisma.userDetails.update({
-        where: { id },
-        data: {
-          ExpirationSubscription: ExpirationSubscription,
-          phoneNumber,
-          birthDate,
-          institution,
-          linkedin,
-          instagram,
-          facebook,
-          x,
-        },
-      });
+    } catch (error) {
+      next(error);
     }
-
-    res.status(200).json({
-      success: `User ${user.email} updated successfully`,
-    });
-  } else if (updateType === "UpdatePassword") {
-    const { id, password } = req.body;
-
-    // Check if the user ID is provided
-    if (!id) {
-      return res.status(400).json({ errorMsg: "User ID is required" });
-    }
-
-    // Check if the password is provided
-    if (!password) {
-      return res.status(400).json({ errorMsg: "Password is required" });
-    }
-
-    // Check if the user exists in the UserAuth model
-    const userCredentials = await prisma.user.findUnique({
-      where: { id },
-    });
-
-    if (!userCredentials) {
-      return res.status(404).json({ errorMsg: "User not found" });
-    }
-
-    // Hash the password
-    const hashedPassword = await hash(password, 10);
-
-    // Update the UserAuth record
-    const updatedUserCredentials = await prisma.user.update({
-      where: { id },
-      data: {
-        password: hashedPassword,
-      },
-    });
-
-    res.status(200).json({
-      success: `User ${updatedUserCredentials.email} password updated successfully`,
-    });
-  }
-});
+  },
+);
