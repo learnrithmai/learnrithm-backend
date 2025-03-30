@@ -9,13 +9,13 @@ import {
   processExsitingUser,
   processNewUser,
   searchProductDatabase,
-} from "@/payment/paymentService";
+} from "@/services/payment/paymentService";
 import { CheckoutUrlInfo } from "@/types/transaction";
 import { Request, Response } from "express";
 import { LocalProduct, Transaction } from "@prisma/client";
 import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
-import { LemonWebhook } from "@/payment/subscription_enum";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
+import { LemonWebhook } from "@/types/Lemon.webhhok";
 
 export const createPayment = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
