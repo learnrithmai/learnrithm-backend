@@ -19,4 +19,9 @@ router.post("/webhook", validate(processWebhookSchema), processWebhook);
 
 router.post("/checkStatus", validate(getPaymentStatusSchema), getPaymentStatus);
 
+// Configure Lemon Squeezy Webhooks
+router.post("/lemon-squeezy/webhooks/subscription-status")
+
+router.post("/lemon-squeezy/webhooks/payment-status")
+
 export default router;

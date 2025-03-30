@@ -101,7 +101,8 @@ export const envSchema = z.object({
 
   //Lemon Squeeze Keys
   LEMON_KEY: stringNonEmpty(),
-  STORE_ID: stringNonEmpty(),
+  LEMON_WEBHOOK_PAYMENT_STATUS: stringNonEmpty(),
+  LEMON_WEBHOOK_SUBSCRIPTION_STATUS: stringNonEmpty(),
 });
 
 // Infer ENV type from the schema
