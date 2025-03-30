@@ -98,6 +98,10 @@ export const envSchema = z.object({
   ),
   ZOHO_SMTP_USERNAME: stringNonEmpty().email(),
   ZOHO_SMTP_PASSWORD: stringNonEmpty(),
+
+  //Lemon Squeeze Keys
+  LEMON_KEY: stringNonEmpty(),
+  STORE_ID: stringNonEmpty(),
 });
 
 // Infer ENV type from the schema
@@ -105,7 +109,7 @@ type Env = z.infer<typeof envSchema>;
 
 declare global {
   namespace NodeJS {
-    interface ProcessEnv extends Env {}
+    interface ProcessEnv extends Env { }
   }
 }
 

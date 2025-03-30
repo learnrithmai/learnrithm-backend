@@ -1,5 +1,5 @@
 import { CheckoutUrlInfo, TransactionData } from "@/types/transaction";
-import { PrismaClient, LocalProduct, Transaction } from "@prisma/client";
+import { LocalProduct, Transaction } from "@prisma/client";
 import {
   getAuthenticatedUser,
   lemonSqueezySetup,
@@ -14,13 +14,14 @@ import {
   Subscription,
 } from "@lemonsqueezy/lemonsqueezy.js";
 import { addMonthsUtil, addYearsUtil } from "@/utils/paymentUtils";
-import { LemonWebhook } from "./subscription_enum";
+import { ENV } from "@/validations/envSchema";
+import prisma from "@/config/db/prisma";
+import { LemonWebhook } from "@/types/Lemon.webhhok";
 
 /* Configuration */
-const prisma = new PrismaClient();
-const lemon_key = process.env.LEMON_KEY;
+const lemon_key = ENV.LEMON_KEY;
 // Change this to your own shop ID
-const store_id = 161228;
+const store_id = ENV.STORE_ID;
 // Set up the Lemon Squeezy
 lemonSqueezySetup({
   apiKey: lemon_key,
