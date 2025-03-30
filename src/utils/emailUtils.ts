@@ -139,9 +139,9 @@ export const sendVerificationEmail = async (
 
   const attachments: Attachment[] = [
     {
-      filename: "logo.svg",
-      path: "public/email/logo.svg",
-      cid: "logo.png",
+      filename: "Learnrithm.png",
+      path: "public/images/Learnrithm.png",
+      cid: "Learnrithm.png",
     },
   ];
 

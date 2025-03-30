@@ -31,8 +31,11 @@ export const envSchema = z.object({
     (x) => (x ? Number(x) : undefined),
     numberSchema.min(1).max(65536).default(27017), // MongoDB default port
   ),
+
+  // OpenAI configuration
   OPENAI_API_KEY: stringNonEmpty(),
   OPENAI_MODEL: z.string().optional(),
+
   // Environment
   NODE_ENV: z.enum(["development", "production"]).default("development"),
   ALLOWED_ORIGINS: z.preprocess((val) => {
@@ -87,7 +90,6 @@ export const envSchema = z.object({
     (x) => (x ? Number(x) : undefined),
     numberSchema.min(1).default(10),
   ),
-
   // SMTP Configuration
   ZOHO_SMTP_HOST: stringNonEmpty().default("smtp.zoho.com"),
   ZOHO_SMTP_PORT: z.preprocess(
