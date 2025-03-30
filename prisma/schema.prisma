@@ -17,7 +17,6 @@ generator client {
 //  Application Models  //
 //////////////////////////
 
-// filepath: prisma/schema.prisma
 model User {
   id                         String    @id @map("_id") @default(auto()) @db.ObjectId
   email                      String    @unique
@@ -114,44 +113,27 @@ model Notifier {
   notifyType              NotificationType @default(not_set)
 }
 
-model Transaction {
-  id                String   @id @map("_id") @default(auto()) @db.ObjectId
-  email             String   @unique
-  duration          String
-  subscriptionStart DateTime
-  subscriptionEnd   DateTime
-  orderName         String
-  orderVariant      String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  refunded          Boolean
-  freeTrial         Boolean
-  trialEndsAt     DateTime
-}
-
-
 //////////////////////////
 //   Payment models     //
 //////////////////////////
 
-model LocalProduct {
-  id                String   @id @map("_id") @default(auto()) @db.ObjectId
-  name              String   
-  nameId            String
-  variant           String
-  variantId         String
-  interval          String
-  price             Float
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  freeTrailAmount   Int
 
+model Subscription {
+id                        String       @id @map("_id")
+userId                    String       
+email                     String
 
-  @@unique([name, variant])
+cardBrand                 String
+cardLastFour              String
+
+status                    String
+trialEndsAt               String
+
+product                   String
+
+subscriptionStartAt       String
+subscriptionRenewsAt      String
 }
-
-
-
 
 
 //////////////////////////
@@ -205,6 +187,7 @@ enum TokenType {
 }
 
 enum NotificationType {
+  not_set
   email_validation
   password_reset
   streak_course
@@ -214,7 +197,13 @@ enum NotificationType {
   all_user
   update
   new_feature
-  not_set
+  subscription_created
+  subscription_updated
+  subscription_cancelled
+  subscription_expired
+  subscription_payment_success
+  subscription_payment_failed
+  subscription_payment_refunded
 }
 
 enum planType {

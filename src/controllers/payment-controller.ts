@@ -1,161 +1,301 @@
-/* Controller of Payment Service */
-// Testing
-// Zhouzhou, backend intern team
-
-import {
-  createCheckoutData,
-  getTransactionByEmail,
-  listProductDatabase,
-  processExsitingUser,
-  processNewUser,
-  searchProductDatabase,
-} from "@/services/payment/paymentService";
-import { CheckoutUrlInfo } from "@/types/transaction";
-import { Request, Response } from "express";
-import { LocalProduct, Transaction } from "@prisma/client";
-import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
+import prisma from "@/config/db/prisma";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
-import { LemonWebhook } from "@/types/Lemon.webhhok";
+import { logPaymentMsg } from "@/utils/paymentUtils";
+import { Request, Response } from "express";
 
-export const createPayment = asyncWrapper(
-  async (req: Request, res: Response): Promise<void> => {
-    // No Request Data
-    if (!req.body) {
-      res
-        .status(400)
-        .json({ error: "Request body is empty. Create payment failed." });
-      return;
-    }
+export const subscriptionHandler = asyncWrapper(async (req: Request, res: Response) => {
+  const { meta, data } = req.body;
 
-    // Get Request Data
-    const data: CheckoutUrlInfo = req.body;
-    if (!data.email || !data.orderName || !data.orderVariant) {
-      res.status(400).json({
-        error: "Missing fields of request body.",
-        Usage: "{email: string, orderName:string, orderVariant:string}",
-      });
-      return;
-    }
-    // Get Product
-    const product: LocalProduct | null = await searchProductDatabase(
-      data.orderName,
-      data.orderVariant
-    );
-
-    // Product not found
-    if (!product) {
-      const products = await listProductDatabase();
-      res.status(400).json({
-        error: "Order Name invalid. Create payment failed.",
-        AvailableProducts: products,
-      });
-      return;
-    }
-
-    // Create Checkout URL
-    const url: string | null = await createCheckoutData(product.variantId, data);
-
-    // Failed create URL
-    if (!url) {
-      res.status(400).json({ error: "Failed to create Checkout URL." });
-      return;
-    }
-
-    // Return URL
-    res
-      .status(200)
-      .json({ message: "Checkout URL created successfully.", url: url });
-  });
-
-export const processWebhook = asyncWrapper(
-  async (req: Request, res: Response): Promise<void> => {
-    // Get the subscription
-    const subscription: Subscription | null = req.body;
-    const metaDataCopy = req.body;
-    if (!subscription) {
-      res.status(400).json({ error: "Failed to receive subscription!" });
-      return;
-    }
-    // Get the subscription detail
-    const productName: string = subscription.data.attributes.product_name;
-    const variantName: string = subscription.data.attributes.variant_name;
-    const variant: LocalProduct | null = await searchProductDatabase(
-      productName,
-      variantName
-    );
-    // Check if Product exists
-    if (!variant) {
-      res.status(400).json({
-        error:
-          "Product data in Lemon Squeezy and Local DataBase is not sync! Try run syncProducts().",
-      });
-      return;
-    }
-    // Case1: New User
-    if (metaDataCopy.meta.event_name === LemonWebhook.Subscription_Create) {
-      // Process the transaction
-      const response: Transaction | null = await processNewUser(
-        subscription,
-        variant
-      );
-      // Process failed
-      if (!response) {
-        res.status(400).json({
-          error:
-            "Can not process transaction. User already exists or Products data not sync",
-        });
-        return;
-      }
-      // Process successfully
-      res
-        .status(200)
-        .json({ message: "Create transaction for new user", data: response });
-      return;
-    }
-
-    // Case2: Exsiting User and Update the subscription
-    if (metaDataCopy.meta.event_name === LemonWebhook.Subscription_Update) {
-      // Process the transaction
-      const response: Transaction | null = await processExsitingUser(
-        subscription,
-        variant
-      );
-      if (!response) {
-        res.status(400).json({
-          error:
-            "Can not process transaction. User doesn't exist or Product not valid.",
-        });
-        return;
-      }
-
-      res.status(200).json({
-        message: "Updated transaction for existing user",
-        data: response,
-      });
-      return;
-    }
-
-    // Case3: Existing User, cancelled the subscription
-
-    // No operation on any other subscription type
-    res.status(200).json({ message: "Successfully received subscription." });
+  if (!meta?.event_name || !data?.attributes) {
+    return res.status(400).json({ message: "Invalid webhook payload" });
   }
-);
 
-export const getPaymentStatus = asyncWrapper(
-  async (req: Request, res: Response): Promise<void> => {
-    // Get Payment Detail from Request
-    const email: string | null = req.body.email;
-    if (!email) {
-      res.status(400).json({ error: "No Email received" });
-      return;
+  const { event_name } = meta;
+  const attributes = data.attributes;
+
+  try {
+    switch (event_name) {
+      case "subscription_created": {
+        // Find the user by email
+        const user = await prisma.user.findFirst({
+          where: { email: attributes.user_email },
+        });
+
+        if (!user) {
+          return res.status(404).json({ error: "User with that email not found" });
+        }
+
+        // Create a new subscription
+        await prisma.subscription.create({
+          data: {
+            id: attributes.id,
+            userId: user.id,
+            email: user.email,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            status: attributes.status,
+            trialEndsAt: `${new Date(attributes.trial_ends_at)}`,
+            product: attributes.product_name,
+            subscriptionStartAt: `${new Date(attributes.created_at)}`,
+            subscriptionRenewsAt: `${new Date(attributes.renews_at)}`,
+          },
+        });
+
+        // Update the user's plan and subscription expiration date
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            plan: attributes.product_name, // Assumes product_name matches plan type
+            ExpirationSubscription: new Date(attributes.renews_at),
+          },
+        });
+
+        await logPaymentMsg(
+          {
+            email: attributes.user_email,
+            trialEndsAt: attributes.trial_ends_at,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            subscriptionStartAt: attributes.created_at,
+            subscriptionRenewsAt: attributes.renews_at,
+            status: attributes.status,
+          },
+          event_name
+        );
+        break;
+      }
+
+      case "subscription_updated": {
+        // Update subscription record
+        await prisma.subscription.update({
+          where: { id: attributes.id },
+          data: {
+            status: attributes.status,
+            trialEndsAt: `${new Date(attributes.trial_ends_at)}`,
+            subscriptionRenewsAt: `${new Date(attributes.renews_at)}`,
+          },
+        });
+
+        // Update the user's plan and subscription expiration date
+        const user = await prisma.user.findFirst({
+          where: { email: attributes.user_email },
+        });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              plan: attributes.product_name,
+              ExpirationSubscription: new Date(attributes.renews_at),
+            },
+          });
+        }
+
+        await logPaymentMsg(attributes, event_name);
+
+        // Create/update notifier for subscription update
+        await prisma.notifier.upsert({
+          where: { userId: attributes.customer_id.toString() },
+          update: {
+            notifyType: "subscription_updated",
+            notify: new Date(),
+          },
+          create: {
+            userId: attributes.customer_id.toString(),
+            email: attributes.user_email,
+            notifyType: "subscription_updated",
+            notify: new Date(),
+          },
+        });
+        break;
+      }
+
+      case "subscription_cancelled": {
+        // Update subscription status to cancelled
+        await prisma.subscription.update({
+          where: { id: attributes.id },
+          data: { status: "cancelled" },
+        });
+        console.log("Subscription Cancelled:", attributes);
+
+        // Update the user's plan to default trial (or any default plan)
+        const user = await prisma.user.findFirst({
+          where: { email: attributes.user_email },
+        });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              plan: "trial_monthly",
+              ExpirationSubscription: null,
+            },
+          });
+        }
+
+        await logPaymentMsg(attributes, event_name);
+
+        // Create/update notifier for cancellation
+        await prisma.notifier.upsert({
+          where: { userId: attributes.customer_id.toString() },
+          update: {
+            notifyType: "subscription_cancelled",
+            notify: new Date(),
+          },
+          create: {
+            userId: attributes.customer_id.toString(),
+            email: attributes.user_email,
+            notifyType: "subscription_cancelled",
+            notify: new Date(),
+          },
+        });
+        break;
+      }
+
+      case "subscription_expired": {
+        // Update subscription status to expired
+        await prisma.subscription.update({
+          where: { id: attributes.id },
+          data: { status: "expired" },
+        });
+
+        // Update the user's plan to default trial and clear expiration
+        const user = await prisma.user.findFirst({
+          where: { email: attributes.user_email },
+        });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              plan: "trial_monthly",
+              ExpirationSubscription: null,
+            },
+          });
+        }
+
+        await logPaymentMsg(attributes, event_name);
+
+        // Create/update notifier for expiration
+        await prisma.notifier.upsert({
+          where: { userId: attributes.customer_id.toString() },
+          update: {
+            notifyType: "subscription_expired",
+            notify: new Date(),
+          },
+          create: {
+            userId: attributes.customer_id.toString(),
+            email: attributes.user_email,
+            notifyType: "subscription_expired",
+            notify: new Date(),
+          },
+        });
+        break;
+      }
+
+      default:
+        console.warn(`Unhandled event type: ${event_name}`);
+        return res.status(400).json({ message: "Unhandled event type" });
     }
-    // Get Transaction
-    const transaction: Transaction | null = await getTransactionByEmail(email);
-    if (!transaction) {
-      res.status(400).json({ error: "Payment Detail Notfound" });
-      return;
+
+    return res.status(200).json({ message: "Webhook processed successfully" });
+  } catch (error) {
+    console.error("Error processing webhook:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res: Response) => {
+  const { meta, data } = req.body;
+
+  if (!meta?.event_name || !data?.attributes) {
+    return res.status(400).json({ message: "Invalid webhook payload" });
+  }
+
+  const { event_name } = meta;
+  const attributes = data.attributes;
+
+  try {
+    switch (event_name) {
+      case "subscription_payment_success": {
+
+        // Update the user's subscription details on successful payment
+        const user = await prisma.user.findFirst({
+          where: { email: attributes.user_email },
+        });
+        if (user) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              plan: attributes.product_name,
+              ExpirationSubscription: new Date(attributes.renews_at),
+            },
+          });
+        }
+
+        await logPaymentMsg(attributes, event_name);
+
+        // Create/update notifier for payment success
+        await prisma.notifier.upsert({
+          where: { userId: attributes.customer_id.toString() },
+          update: {
+            notifyType: "subscription_payment_success",
+            notify: new Date(),
+          },
+          create: {
+            userId: attributes.customer_id.toString(),
+            email: attributes.user_email,
+            notifyType: "subscription_payment_success",
+            notify: new Date(),
+          },
+        });
+        break;
+      }
+      case "subscription_payment_failed": {
+
+        await logPaymentMsg(attributes, event_name);
+
+        // Create/update notifier for payment failure
+        await prisma.notifier.upsert({
+          where: { userId: attributes.customer_id.toString() },
+          update: {
+            notifyType: "subscription_payment_failed",
+            notify: new Date(),
+          },
+          create: {
+            userId: attributes.customer_id.toString(),
+            email: attributes.user_email,
+            notifyType: "subscription_payment_failed",
+            notify: new Date(),
+          },
+        });
+        break;
+      }
+      case "subscription_payment_refunded": {
+
+        await logPaymentMsg(attributes, event_name);
+
+        // Create/update notifier for payment refunded
+        await prisma.notifier.upsert({
+          where: { userId: attributes.customer_id.toString() },
+          update: {
+            notifyType: "subscription_payment_refunded",
+            notify: new Date(),
+          },
+          create: {
+            userId: attributes.customer_id.toString(),
+            email: attributes.user_email,
+            notifyType: "subscription_payment_refunded",
+            notify: new Date(),
+          },
+        });
+        break;
+      }
+      default:
+        console.warn(`Unhandled event type: ${event_name}`);
+        return res.status(400).json({ message: "Unhandled event type" });
     }
-    res.status(200).json({ message: transaction });
-    return;
-  });
+
+    return res.status(200).json({ message: "Webhook processed successfully" });
+  } catch (error) {
+    console.error("Error processing webhook:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
