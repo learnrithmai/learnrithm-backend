@@ -8,6 +8,7 @@ import swaggerJSDoc from "swagger-jsdoc";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+// import ngrok from "@ngrok/ngrok";
 import { credentials } from "./middleware/auth/credentials";
 import { helmetOptions } from "./config/security/helmetOptions";
 import { corsOptions } from "./config/security/corsOptions";
@@ -26,8 +27,6 @@ import {
   morganSuccessHandler,
 } from "./config/logging/morganConfig";
 
-// Import ngrok
-import ngrok from "@ngrok/ngrok";
 
 dotenv.config();
 
@@ -118,15 +117,12 @@ async function startServer() {
       logger.database(`Server running on port `, `${port}`)
     );
 
-    // Expose your local server via ngrok
-    const publicUrl = await ngrok.connect({
-      addr: port,
-      authtoken_from_env: true,
-    });
-    console.log(publicUrl.forwardsTo())
-    console.log(publicUrl.metadata())
-    console.log(publicUrl.url())
-    logger.info(`ngrok tunnel established at: ${publicUrl.url()}`);
+    // // Expose your local server via ngrok
+    // const publicUrl = await ngrok.connect({
+    //   addr: port,
+    //   authtoken_from_env: true,
+    // });
+    // logger.info(`ngrok tunnel established at: ${publicUrl.url()}`);
   } catch (error) {
     logger.error("Failed to connect to the database", error as string);
     process.exit(1);
