@@ -107,8 +107,8 @@ model Streaker {
 
 model Notifier {
   id                      String   @id @map("_id") @default(auto()) @db.ObjectId
-  userId                  String   @unique 
-  email                   String   @unique
+  userId                  String   
+  email                   String   
   notify                  DateTime @default(now())
   notifyType              NotificationType @default(not_set)
 }
@@ -127,7 +127,7 @@ cardBrand                 String
 cardLastFour              String
 
 status                    String
-trialEndsAt               String
+trialEndsAt               String?
 
 product                   String
 
@@ -188,28 +188,40 @@ enum TokenType {
 
 enum NotificationType {
   not_set
+  
   email_validation
   password_reset
+
   streak_course
   streak_quiz
   streak_sign
   streak_hit
+
   all_user
   update
   new_feature
+
+
   subscription_created
   subscription_updated
   subscription_cancelled
   subscription_expired
+
   subscription_payment_success
   subscription_payment_failed
   subscription_payment_refunded
 }
 
 enum planType {
+  free
+
+  trial_weekly
+  charged_weekly
+
   trial_monthly
-  trial_yearly
   charged_monthly
+
+  trial_yearly
   charged_yearly
 }
 

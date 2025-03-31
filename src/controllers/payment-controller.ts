@@ -1,6 +1,7 @@
 import prisma from "@/config/db/prisma";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
-import { logPaymentMsg } from "@/utils/paymentUtils";
+import { formattedPlan, logPaymentMsg } from "@/utils/paymentUtils";
+import { planType } from "@prisma/client";
 import { Request, Response } from "express";
 
 export const subscriptionHandler = asyncWrapper(async (req: Request, res: Response) => {
@@ -13,22 +14,21 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
   const { event_name } = meta;
   const attributes = data.attributes;
 
+  const user = await prisma.user.findFirst({
+    where: { email: attributes.user_email },
+  });
+
+  if (!user) {
+    return res.status(404).json({ error: "User with that email not found" });
+  }
+
   try {
     switch (event_name) {
       case "subscription_created": {
-        // Find the user by email
-        const user = await prisma.user.findFirst({
-          where: { email: attributes.user_email },
-        });
-
-        if (!user) {
-          return res.status(404).json({ error: "User with that email not found" });
-        }
-
         // Create a new subscription
         await prisma.subscription.create({
           data: {
-            id: attributes.id,
+            id: data.id,
             userId: user.id,
             email: user.email,
             cardBrand: attributes.card_brand,
@@ -41,11 +41,12 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
           },
         });
 
+
         // Update the user's plan and subscription expiration date
         await prisma.user.update({
           where: { id: user.id },
           data: {
-            plan: attributes.product_name, // Assumes product_name matches plan type
+            plan: formattedPlan(attributes.product_name, attributes.status === "on_trial") as planType,
             ExpirationSubscription: new Date(attributes.renews_at),
           },
         });
@@ -68,40 +69,32 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
       case "subscription_updated": {
         // Update subscription record
         await prisma.subscription.update({
-          where: { id: attributes.id },
+          where: { id: data.id },
           data: {
             status: attributes.status,
             trialEndsAt: `${new Date(attributes.trial_ends_at)}`,
             subscriptionRenewsAt: `${new Date(attributes.renews_at)}`,
+            subscriptionStartAt: `${new Date(attributes.updated_at)}`
           },
         });
 
         // Update the user's plan and subscription expiration date
-        const user = await prisma.user.findFirst({
-          where: { email: attributes.user_email },
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            plan: formattedPlan(attributes.product_name, attributes.status === "on_trial") as planType,
+            ExpirationSubscription: new Date(attributes.renews_at),
+          },
         });
-        if (user) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              plan: attributes.product_name,
-              ExpirationSubscription: new Date(attributes.renews_at),
-            },
-          });
-        }
 
         await logPaymentMsg(attributes, event_name);
 
         // Create/update notifier for subscription update
-        await prisma.notifier.upsert({
-          where: { userId: attributes.customer_id.toString() },
-          update: {
-            notifyType: "subscription_updated",
-            notify: new Date(),
-          },
-          create: {
-            userId: attributes.customer_id.toString(),
-            email: attributes.user_email,
+        await prisma.notifier.create({
+          data: {
+            userId: user?.id,
+            email: user.email,
             notifyType: "subscription_updated",
             notify: new Date(),
           },
@@ -112,37 +105,26 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
       case "subscription_cancelled": {
         // Update subscription status to cancelled
         await prisma.subscription.update({
-          where: { id: attributes.id },
+          where: { id: data.id },
           data: { status: "cancelled" },
         });
         console.log("Subscription Cancelled:", attributes);
 
-        // Update the user's plan to default trial (or any default plan)
-        const user = await prisma.user.findFirst({
-          where: { email: attributes.user_email },
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            plan: "free",
+            ExpirationSubscription: null,
+          },
         });
-        if (user) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              plan: "trial_monthly",
-              ExpirationSubscription: null,
-            },
-          });
-        }
 
         await logPaymentMsg(attributes, event_name);
 
         // Create/update notifier for cancellation
-        await prisma.notifier.upsert({
-          where: { userId: attributes.customer_id.toString() },
-          update: {
-            notifyType: "subscription_cancelled",
-            notify: new Date(),
-          },
-          create: {
-            userId: attributes.customer_id.toString(),
-            email: attributes.user_email,
+        await prisma.notifier.create({
+          data: {
+            userId: user.id,
+            email: user.email,
             notifyType: "subscription_cancelled",
             notify: new Date(),
           },
@@ -153,36 +135,25 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
       case "subscription_expired": {
         // Update subscription status to expired
         await prisma.subscription.update({
-          where: { id: attributes.id },
+          where: { id: data.id },
           data: { status: "expired" },
         });
 
-        // Update the user's plan to default trial and clear expiration
-        const user = await prisma.user.findFirst({
-          where: { email: attributes.user_email },
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            plan: "free",
+            ExpirationSubscription: null,
+          },
         });
-        if (user) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              plan: "trial_monthly",
-              ExpirationSubscription: null,
-            },
-          });
-        }
 
         await logPaymentMsg(attributes, event_name);
 
         // Create/update notifier for expiration
-        await prisma.notifier.upsert({
-          where: { userId: attributes.customer_id.toString() },
-          update: {
-            notifyType: "subscription_expired",
-            notify: new Date(),
-          },
-          create: {
-            userId: attributes.customer_id.toString(),
-            email: attributes.user_email,
+        await prisma.notifier.create({
+          data: {
+            userId: user.id,
+            email: user.email,
             notifyType: "subscription_expired",
             notify: new Date(),
           },
@@ -212,36 +183,24 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
   const { event_name } = meta;
   const attributes = data.attributes;
 
+  const subscription = await prisma.subscription.findFirst({
+    where: { id: `${attributes.subscription_id}` },
+  });
+
+  if (!subscription) {
+    return res.status(404).json({ error: "subscription with that id not found" });
+  }
+
   try {
     switch (event_name) {
       case "subscription_payment_success": {
-
-        // Update the user's subscription details on successful payment
-        const user = await prisma.user.findFirst({
-          where: { email: attributes.user_email },
-        });
-        if (user) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              plan: attributes.product_name,
-              ExpirationSubscription: new Date(attributes.renews_at),
-            },
-          });
-        }
-
-        await logPaymentMsg(attributes, event_name);
+        await logPaymentMsg({ email: subscription.email }, event_name);
 
         // Create/update notifier for payment success
-        await prisma.notifier.upsert({
-          where: { userId: attributes.customer_id.toString() },
-          update: {
-            notifyType: "subscription_payment_success",
-            notify: new Date(),
-          },
-          create: {
-            userId: attributes.customer_id.toString(),
-            email: attributes.user_email,
+        await prisma.notifier.create({
+          data: {
+            userId: subscription.userId,
+            email: subscription.email,
             notifyType: "subscription_payment_success",
             notify: new Date(),
           },
@@ -250,18 +209,22 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
       }
       case "subscription_payment_failed": {
 
-        await logPaymentMsg(attributes, event_name);
+        // Update the user's subscription details on successful payment
+        await prisma.user.update({
+          where: { id: subscription.userId },
+          data: {
+            plan: "free",
+            ExpirationSubscription: null,
+          },
+        });
+
+        await logPaymentMsg({ email: subscription.email }, event_name);
 
         // Create/update notifier for payment failure
-        await prisma.notifier.upsert({
-          where: { userId: attributes.customer_id.toString() },
-          update: {
-            notifyType: "subscription_payment_failed",
-            notify: new Date(),
-          },
-          create: {
-            userId: attributes.customer_id.toString(),
-            email: attributes.user_email,
+        await prisma.notifier.create({
+          data: {
+            userId: subscription.userId,
+            email: subscription.email,
             notifyType: "subscription_payment_failed",
             notify: new Date(),
           },
@@ -269,19 +232,13 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         break;
       }
       case "subscription_payment_refunded": {
-
-        await logPaymentMsg(attributes, event_name);
+        await logPaymentMsg({ email: subscription.email }, event_name);
 
         // Create/update notifier for payment refunded
-        await prisma.notifier.upsert({
-          where: { userId: attributes.customer_id.toString() },
-          update: {
-            notifyType: "subscription_payment_refunded",
-            notify: new Date(),
-          },
-          create: {
-            userId: attributes.customer_id.toString(),
-            email: attributes.user_email,
+        await prisma.notifier.create({
+          data: {
+            userId: subscription.userId,
+            email: subscription.email,
             notifyType: "subscription_payment_refunded",
             notify: new Date(),
           },

@@ -10,6 +10,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import authRouter from "./auth";
 import user from "./user";
+import payment from "./payment";
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.use("/auth", authRouter);
 
 //* ---------- Protected routes ------------
 router.use("/user", user);
+router.use("/payment", payment);
 
 router
   .route("/upload")
