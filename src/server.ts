@@ -26,12 +26,14 @@ import {
   morganSuccessHandler,
 } from "./config/logging/morganConfig";
 
+// Import ngrok
+import ngrok from "@ngrok/ngrok";
+
 dotenv.config();
 
 const app: Application = express();
 
 // Trust Proxy for Proxies (Heroku, Render.com, Docker behind Nginx, etc)
-// https://stackoverflow.com/questions/40459511/in-express-js-req-protocol-is-not-picking-up-https-for-my-secure-link-it-alwa
 app.set("trust proxy", true);
 
 // Set security HTTP headers
@@ -44,35 +46,27 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //? Morgan console logger
-
-//* 1. defualt morgan logger
 app.use(morgan("dev"));
-
-//* 2. morgan logger with winston
 app.use(morganSuccessHandler);
 app.use(morganErrorHandler);
 
 // Handle options credentials check - before CORS!
-// Set the "Access-Control-Allow-Credentials" header if the request origin is allowed.
 app.use(credentials);
 
 // Cross Origin Resource Sharing
 app.use(cors(corsOptions));
 
-// Global RateLimiter : limits number of actions by key and protects from DDoS and brute force attacks at any scale.
+// Global RateLimiter to protect against DDoS and brute force attacks.
 app.use(rateLimiterMiddleware);
 
-//  parse urlencoded request body
+// Parse urlencoded and json request bodies
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
-
-// parse json request body
 app.use(express.json({ limit: "1mb" }));
 
-// middleware for cookies
-// allows you to access cookie values via req.cookies.
+// Middleware for cookies
 app.use(cookieParser());
 
-// attach metadata (req time , IP , user agent) to request object
+// Attach metadata (req time, IP, user agent) to request object
 app.use(attachMetadata);
 
 // Compress response bodies
@@ -80,27 +74,24 @@ app.use(compression());
 
 // Serve static files
 app.use(express.static(join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "../public/static")));
 
-// disable "x-powered-by Express" in the req header
+// Disable "x-powered-by Express" in the request header
 app.disable("x-powered-by");
 
-//? Auth
-//* PassportJS JWT authentication
+// PassportJS JWT authentication
 app.use(passport.initialize());
 passport.use("jwt", jwtStrategy);
-
-// Serve static files from the "static" folder
-app.use(express.static(path.join(__dirname, "../public/static")));
 
 // Default route - serve the HTML page with the image and text
 app.get("/", (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "../public/static/index.html"));
 });
 
-//APIs Consume
+// API routes
 app.use("/api/v2", apiV1Routes);
 
-// global error handling
+// Global error handling
 app.use(errorHandler);
 
 async function startServer() {
@@ -108,7 +99,8 @@ async function startServer() {
     // Connect to the MongoDB database
     await prisma.$connect();
     console.log("Connected to MongoDB .... 🐲");
-    // Manually log the database connection details
+
+    // Log database connection details
     const DatabaseInfo = {
       "DB Name": ENV.DB_NAME,
       User: ENV.DB_USER,
@@ -117,10 +109,24 @@ async function startServer() {
     };
     console.table(DatabaseInfo);
 
+    // Determine port
+    const port = process.env.PORT || 5000;
+    
+
     // Start the server
-    app.listen(process.env.PORT || 5000, () =>
-      logger.database(`Server running on port `, `${process.env.PORT || 5000}`),
+    app.listen(port, () =>
+      logger.database(`Server running on port `, `${port}`)
     );
+
+    // Expose your local server via ngrok
+    const publicUrl = await ngrok.connect({
+      addr: port,
+      authtoken_from_env: true,
+    });
+    console.log(publicUrl.forwardsTo())
+    console.log(publicUrl.metadata())
+    console.log(publicUrl.url())
+    logger.info(`ngrok tunnel established at: ${publicUrl.url()}`);
   } catch (error) {
     logger.error("Failed to connect to the database", error as string);
     process.exit(1);

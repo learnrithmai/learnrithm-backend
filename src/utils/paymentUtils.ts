@@ -1,5 +1,7 @@
 import logger from "./chalkLogger";
 
+
+// Logging payment information function
 type dataType = {
   email?: string;
   trialEndsAt?: string;
@@ -79,5 +81,46 @@ The refunded amount has been processed and reversed accordingly.`
         `Unhandled event type: ${type}. Received data: ${JSON.stringify(data)}`
       );
       break;
+  }
+}
+
+// Get the plan name according to the product name and if on free trial
+
+type ProductType = "Yearly Plan" | "Monthly Plan" | "Weekly Plan";
+type PromisedPlan =
+  | "trial_yearly"
+  | "trial_monthly"
+  | "trial_weekly"
+  | "charged_yearly"
+  | "charged_monthly"
+  | "charged_weekly";
+
+export function formattedPlan(
+  product: ProductType,
+  onTrial: boolean
+): PromisedPlan {
+
+  if (onTrial) {
+    switch (product) {
+      case "Yearly Plan":
+        return "trial_yearly";
+      case "Monthly Plan":
+        return "trial_monthly";
+      case "Weekly Plan":
+        return "trial_weekly";
+      default:
+        throw new Error("Invalid product type for trial plan");
+    }
+  } else {
+    switch (product) {
+      case "Yearly Plan":
+        return "charged_yearly";
+      case "Monthly Plan":
+        return "charged_monthly";
+      case "Weekly Plan":
+        return "charged_weekly";
+      default:
+        throw new Error("Invalid product type for charged plan");
+    }
   }
 }

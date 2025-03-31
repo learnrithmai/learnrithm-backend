@@ -96,6 +96,7 @@ export const registerUser = asyncWrapper(
             Name,
             country: userCountry as string,
             lastLogin: new Date(),
+            plan: 'free'
           },
         });
 
