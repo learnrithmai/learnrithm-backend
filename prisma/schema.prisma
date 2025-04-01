@@ -150,7 +150,19 @@ model LocalProduct {
   @@unique([name, variant])
 }
 
+//////////////////////////
+//   Streak models      //
+//////////////////////////
 
+model Streak {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  email             String
+  date              DateTime
+  activities        String[]
+  point             Int
+
+  @@unique([email, date])
+}
 
 
 

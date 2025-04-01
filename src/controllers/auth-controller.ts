@@ -106,7 +106,7 @@ export const registerUser = asyncWrapper(
         res.cookie(
           "jwt",
           tokens.refresh.token,
-          getCookieOptions(tokens.refresh.expires),
+          getCookieOptions(tokens.refresh.expires)
         );
 
         // Process OAuth token storage if needed.
@@ -170,7 +170,7 @@ export const registerUser = asyncWrapper(
         details: error instanceof Error ? error.message : error,
       });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -220,7 +220,7 @@ export const login = asyncWrapper(
     res.cookie(
       "jwt",
       tokens.refresh.token,
-      getCookieOptions(tokens.refresh.expires),
+      getCookieOptions(tokens.refresh.expires)
     );
 
     res.send({
@@ -228,7 +228,7 @@ export const login = asyncWrapper(
       user,
       accessToken: tokens.access,
     });
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -261,7 +261,7 @@ export const logout = asyncWrapper(
     await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
     res.clearCookie("jwt", getCookieOptions(refreshTokenDoc.tokenExpires));
     res.status(204).send();
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -311,7 +311,7 @@ export const refreshTokens = asyncWrapper(
         .status(500)
         .json({ error: "An error occurred while refreshing tokens." });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -350,7 +350,7 @@ export const forgotPassword = asyncWrapper(
       console.error("Error in forgotPassword:", error);
       res.status(500).json({ error: "Internal server error" });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -364,7 +364,7 @@ export const resetPassword = asyncWrapper(
 
     const resetTokenDoc = await verifyToken(
       resetToken,
-      TokenType.password_reset,
+      TokenType.password_reset
     );
     if (!resetTokenDoc) {
       res.status(404).json({
@@ -400,7 +400,7 @@ export const resetPassword = asyncWrapper(
     res
       .status(200)
       .json({ message: "Your password has been changed successfully" });
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -437,7 +437,7 @@ export const sendVerificationEmail = asyncWrapper(
       console.error("Error sending verification email:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -450,7 +450,7 @@ export const verifyEmail = asyncWrapper(
 
     const verifyEmailTokenDoc = await verifyToken(
       verifyEmailToken,
-      TokenType.email_validation,
+      TokenType.email_validation
     );
     if (!verifyEmailTokenDoc) {
       res.status(404).json({
@@ -478,5 +478,5 @@ export const verifyEmail = asyncWrapper(
       where: { userId: user.id, tokenType: TokenType.email_validation },
     });
     res.status(204).send();
-  },
+  }
 );
