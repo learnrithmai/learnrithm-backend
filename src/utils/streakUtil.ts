@@ -1,10 +1,8 @@
 /* Service of Streak */
-import { PrismaClient, Score } from "@prisma/client";
+import { Score } from "@prisma/client";
 import { NewStreak, StreakActivity } from "@/types/streak";
 import { Streak } from "@prisma/client";
-
-// ? Better replace this prisma with that one in "config"
-const prisma: PrismaClient = new PrismaClient();
+import prisma from "@/config/db/prisma";
 
 // * Score added for each operation
 export const SCORE: number = 10;
