@@ -1,22 +1,12 @@
-// Project: Payment
-// Zhouzhou, Backend Intern Team
-
+import { subscriptionHandler, subscriptionPaymentHandler } from "@/controllers/payment-controller";
 import { Router } from "express";
-import {
-  createPayment,
-  getPaymentStatus,
-  processWebhook,
-} from "@/controllers/payment-controller";
-import { createPaymentSchema, getPaymentStatusSchema, processWebhookSchema } from "@/validations/paymentSchema";
-import validate from "express-zod-safe";
 
 const router = Router({ mergeParams: true });
 
-/* Configure the Routes */
-router.post("/createUrl", validate(createPaymentSchema), createPayment);
+// Configure Lemon Squeezy Webhooks
 
-router.post("/webhook", validate(processWebhookSchema), processWebhook);
+router.post("/lemon-squeezy/webhooks/subscription-status", subscriptionHandler)
 
-router.post("/checkStatus", validate(getPaymentStatusSchema), getPaymentStatus);
+router.post("/lemon-squeezy/webhooks/payment-status", subscriptionPaymentHandler)
 
 export default router;
