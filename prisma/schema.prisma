@@ -149,6 +149,12 @@ model Streak {
   @@unique([email, date])
 }
 
+model Score {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  email             String   @unique
+  score             Int
+}
+
 //////////////////////////
 //   Quiz Game Models   //
 //////////////////////////

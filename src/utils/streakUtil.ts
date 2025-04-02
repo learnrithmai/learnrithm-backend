@@ -1,10 +1,13 @@
 /* Service of Streak */
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Score } from "@prisma/client";
 import { NewStreak, StreakActivity } from "@/types/streak";
 import { Streak } from "@prisma/client";
 
 // ? Better replace this prisma with that one in "config"
 const prisma: PrismaClient = new PrismaClient();
+
+// * Score added for each operation
+export const SCORE: number = 10;
 
 // Get the date of today
 export const getTodayDate = (): Date => {
@@ -49,12 +52,31 @@ export const getLastDayStreak = async (
   return lastDayStreak;
 };
 
+// Search for user's score
+export const getScore = async (email: string): Promise<Score | null> => {
+  return await prisma.score.findUnique({ where: { email: email } });
+};
+
+// Update a user's score
+export const updateScore = async (score: Score): Promise<Score> => {
+  return prisma.score.update({
+    where: { email: score.email },
+    data: {
+      score: score.score,
+    },
+  });
+};
+
 // Create New steak for a user
 export const createNewStreak = async (email: string): Promise<Streak> => {
   // Check if User logged in before
   const lastDayStreak: Streak | null = await getLastDayStreak(email);
   const point: number = lastDayStreak ? lastDayStreak.point + 1 : 1;
 
+  // Check if User has a Score, created new one if not
+  if (!(await prisma.score.findUnique({ where: { email: email } }))) {
+    await prisma.score.create({ data: { email: email, score: 0 } });
+  }
   // Get today's new date
   const today: Date = getTodayDate();
   // Construct the Streak
@@ -93,6 +115,35 @@ export const logStreakActivity = async (
     thisStreak = streak;
   }
 
+  // Add activity
   thisStreak.activities.push(activity);
+
+  // Add score
+  const thisScore: Score | null = await getScore(email);
+  if (!thisScore) {
+    throw new Error("Score data not found! Please log in first!");
+  }
+  await addScore(thisScore, activity);
+
+  // Update the streak
   return await updateStreak(thisStreak);
+};
+
+// Add score to a "Score" type
+export const addScore = async (
+  score: Score,
+  activity: StreakActivity
+): Promise<Score> => {
+  // TODO: You can modify the exact score to add, here.
+  if (activity == "create_course") {
+    score.score += SCORE;
+  } else if (activity == "create_quiz") {
+    score.score += SCORE;
+  } else if (activity == "unlock_subtopic") {
+    score.score += SCORE;
+  } else {
+    // Pass
+  }
+  // Update the score
+  return await updateScore(score);
 };
