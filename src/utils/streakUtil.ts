@@ -53,7 +53,7 @@ export const getLastDayStreak = async (
 export const createNewStreak = async (email: string): Promise<Streak> => {
   // Check if User logged in before
   const lastDayStreak: Streak | null = await getLastDayStreak(email);
-  const point: number = lastDayStreak ? lastDayStreak.point + 1 : 0;
+  const point: number = lastDayStreak ? lastDayStreak.point + 1 : 1;
 
   // Get today's new date
   const today: Date = getTodayDate();
@@ -61,7 +61,7 @@ export const createNewStreak = async (email: string): Promise<Streak> => {
   const newStreak: NewStreak = {
     email: email,
     date: today,
-    activities: [],
+    activities: ["login"],
     point: point,
   };
   // ! Throw error if this streak already exists
