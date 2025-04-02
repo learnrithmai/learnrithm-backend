@@ -99,10 +99,23 @@ export const envSchema = z.object({
   ZOHO_SMTP_USERNAME: stringNonEmpty().email(),
   ZOHO_SMTP_PASSWORD: stringNonEmpty(),
 
-  //Lemon Squeeze Keys
+  // Lemon Squeeze Keys
   LEMON_KEY: stringNonEmpty(),
   LEMON_WEBHOOK_PAYMENT_STATUS: stringNonEmpty(),
   LEMON_WEBHOOK_SUBSCRIPTION_STATUS: stringNonEmpty(),
+
+  // Cookies Options Configurations
+  COOKIE_MAX_AGE: z.preprocess(
+    (x) => (x ? Number(x) : undefined),
+    numberSchema.min(1).default(3600000),
+  ),
+  COOKIE_MAX_AGE_REMEMBER_ME: z.preprocess(
+    (x) => (x ? Number(x) : undefined),
+    numberSchema.min(1).default(2592000000),
+  ),
+
+  // Local NGROK used
+  NGROK_AUTHTOKEN: z.string().optional(),
 });
 
 // Infer ENV type from the schema

@@ -187,8 +187,6 @@ enum TokenType {
 }
 
 enum NotificationType {
-  not_set
-  
   email_validation
   password_reset
 

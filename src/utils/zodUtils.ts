@@ -335,25 +335,25 @@ export const validate =
   (
     schema: AnyZodObject,
   ): ((req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-  /**
-   * Express middleware function.
-   * @param {Request} req - The Express request object.
-   * @param {Response} res - The Express response object.
-   * @param {NextFunction} next - The Express next function.
-   * @returns {Promise<void>} A Promise that resolves when the validation is done.
-   */
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      await schema.parseAsync({
-        body: req.body,
-        query: req.query,
-        params: req.params,
-      });
-      return next();
-    } catch (error) {
-      handleZodError(error, res);
-    }
-  };
+    /**
+     * Express middleware function.
+     * @param {Request} req - The Express request object.
+     * @param {Response} res - The Express response object.
+     * @param {NextFunction} next - The Express next function.
+     * @returns {Promise<void>} A Promise that resolves when the validation is done.
+     */
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        await schema.parseAsync({
+          body: req.body,
+          query: req.query,
+          params: req.params,
+        });
+        return next();
+      } catch (error) {
+        handleZodError(error, res);
+      }
+    };
 
 /**
  * Formats a path array into a string representation. (from zod paths)

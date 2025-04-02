@@ -1,3 +1,4 @@
+import { ENV } from "@/validations/envSchema";
 import { isProd } from "../../config/const";
 import { CookieOptions } from "express";
 
@@ -21,13 +22,14 @@ import { CookieOptions } from "express";
  * const options = getCookieOptions(new Date(Date.now() + 3600000), false, false);
  */
 export const getCookieOptions = (
+  rememberMe: boolean,
   expires?: Date,
-  httpOnly: boolean = true,
+  httpOnly: boolean = true
 ): CookieOptions => ({
   httpOnly,
   secure: isProd,
   sameSite: isProd ? "strict" : "lax", // Corrected the casing
   expires,
-  // maxAge: rememberMe ? ENV.COOKIE_MAX_AGE_REMEMBER_ME : ENV.COOKIE_MAX_AGE, //* use this line if you have a remember me option
+  maxAge: rememberMe ? ENV.COOKIE_MAX_AGE_REMEMBER_ME : ENV.COOKIE_MAX_AGE, //* use this line if you have a remember me option
   // maxAge: 2000, //! use this line if you don't have a remember me option
 });
