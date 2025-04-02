@@ -110,7 +110,7 @@ model Notifier {
   userId                  String   
   email                   String   
   notify                  DateTime @default(now())
-  notifyType              NotificationType @default(not_set)
+  notifyType              NotificationType @default(all_user)
 }
 
 //////////////////////////
