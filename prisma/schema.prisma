@@ -135,6 +135,25 @@ subscriptionStartAt       String
 subscriptionRenewsAt      String
 }
 
+//////////////////////////
+//   Streak models      //
+//////////////////////////
+
+model Streak {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  email             String
+  date              DateTime
+  activities        String[]
+  point             Int
+
+  @@unique([email, date])
+}
+
+model Score {
+  id                String   @id @map("_id") @default(auto()) @db.ObjectId
+  email             String   @unique
+  score             Int
+}
 
 //////////////////////////
 //   Quiz Game Models   //

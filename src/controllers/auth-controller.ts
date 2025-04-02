@@ -38,8 +38,16 @@ import geoip from "geoip-lite";
 export const registerUser = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, Name, image, password, country, referralCode, method, dontRememberMe } =
-        req.body as RegisterUserBody;
+      const {
+        email,
+        Name,
+        image,
+        password,
+        country,
+        referralCode,
+        method,
+        dontRememberMe,
+      } = req.body as RegisterUserBody;
 
       // Validate required fields.
       if (!email || !Name || !method) {
@@ -96,7 +104,7 @@ export const registerUser = asyncWrapper(
             Name,
             country: userCountry as string,
             lastLogin: new Date(),
-            plan: 'free'
+            plan: "free",
           },
         });
 
@@ -107,7 +115,7 @@ export const registerUser = asyncWrapper(
         res.cookie(
           "jwt",
           tokens.refresh.token,
-          getCookieOptions(!dontRememberMe, tokens.refresh.expires),
+          getCookieOptions(!dontRememberMe, tokens.refresh.expires)
         );
 
         if (referralCode) {
@@ -136,7 +144,9 @@ export const registerUser = asyncWrapper(
       if (method === "normal") {
         await sendRegisterEmail({ Name, email });
 
-        await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, { email });
+        await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
+          email,
+        });
       }
 
       // Build the client user object.
@@ -167,7 +177,7 @@ export const registerUser = asyncWrapper(
         details: error instanceof Error ? error.message : error,
       });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -217,7 +227,7 @@ export const login = asyncWrapper(
     res.cookie(
       "jwt",
       tokens.refresh.token,
-      getCookieOptions(!dontRememberMe, tokens.refresh.expires),
+      getCookieOptions(!dontRememberMe, tokens.refresh.expires)
     );
 
     res.send({
@@ -225,7 +235,7 @@ export const login = asyncWrapper(
       user,
       accessToken: tokens.access,
     });
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -256,9 +266,12 @@ export const logout = asyncWrapper(
     }
 
     await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
-    res.clearCookie("jwt", getCookieOptions(false, refreshTokenDoc.tokenExpires));
+    res.clearCookie(
+      "jwt",
+      getCookieOptions(false, refreshTokenDoc.tokenExpires)
+    );
     res.status(204).send();
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -308,7 +321,7 @@ export const refreshTokens = asyncWrapper(
         .status(500)
         .json({ error: "An error occurred while refreshing tokens." });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -347,7 +360,7 @@ export const forgotPassword = asyncWrapper(
       console.error("Error in forgotPassword:", error);
       res.status(500).json({ error: "Internal server error" });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -361,7 +374,7 @@ export const resetPassword = asyncWrapper(
 
     const resetTokenDoc = await verifyToken(
       resetToken,
-      TokenType.password_reset,
+      TokenType.password_reset
     );
     if (!resetTokenDoc) {
       res.status(404).json({
@@ -397,7 +410,7 @@ export const resetPassword = asyncWrapper(
     res
       .status(200)
       .json({ message: "Your password has been changed successfully" });
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -444,7 +457,7 @@ export const sendVerificationEmail = asyncWrapper(
       console.error("Error sending verification email:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  },
+  }
 );
 
 // ────────────────────────────────────────────────────────────────
@@ -457,7 +470,7 @@ export const verifyEmail = asyncWrapper(
 
     const verifyEmailTokenDoc = await verifyToken(
       verifyEmailToken,
-      TokenType.email_validation,
+      TokenType.email_validation
     );
     if (!verifyEmailTokenDoc) {
       res.status(404).json({
@@ -492,5 +505,5 @@ export const verifyEmail = asyncWrapper(
       },
     });
     res.status(204).send();
-  },
+  }
 );
