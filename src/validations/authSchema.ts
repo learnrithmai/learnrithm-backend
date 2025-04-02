@@ -14,6 +14,7 @@ export const registerUserSchema = {
     referralCode: z.string().optional(),
     method: z.enum(["normal", "google"]),
     image: z.string().optional(),
+    dontRememberMe: z.boolean().default(false),
   }),
 };
 
@@ -43,6 +44,7 @@ export const loginSchema = {
     password: z
       .string()
       .min(6, { message: "Password must be at least 6 characters" }),
+    dontRememberMe: z.boolean().default(false),
   }),
 };
 

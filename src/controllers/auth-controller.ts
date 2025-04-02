@@ -38,7 +38,7 @@ import geoip from "geoip-lite";
 export const registerUser = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email, Name, image, password, country, referralCode, method } =
+      const { email, Name, image, password, country, referralCode, method, dontRememberMe } =
         req.body as RegisterUserBody;
 
       // Validate required fields.
@@ -107,13 +107,9 @@ export const registerUser = asyncWrapper(
         res.cookie(
           "jwt",
           tokens.refresh.token,
-          getCookieOptions(tokens.refresh.expires),
+          getCookieOptions(!dontRememberMe, tokens.refresh.expires),
         );
 
-        // Process OAuth token storage if needed.
-        // (You can add code here for OAuth token storage.)
-
-        // Process referral if provided.
         if (referralCode) {
           const referrer = await tx.referralCode.findUnique({
             where: { code: referralCode },
@@ -137,11 +133,11 @@ export const registerUser = asyncWrapper(
         return { createdUser, tokens };
       });
 
-      await sendRegisterEmail(createdUser);
+      if (method === "normal") {
+        await sendRegisterEmail({ Name, email });
 
-      await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
-        email: createdUser.email,
-      });
+        await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, { email });
+      }
 
       // Build the client user object.
       const clientUser = {
@@ -156,7 +152,7 @@ export const registerUser = asyncWrapper(
         token: {
           accessToken: tokens.access,
           refreshToken: tokens.refresh.token,
-          tokenExpiry: tokens.refresh.expires, // This should be a numeric timestamp (ms)
+          tokenExpiry: tokens.refresh.expires,
         },
       };
 
@@ -180,7 +176,7 @@ export const registerUser = asyncWrapper(
 
 export const login = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    const { email, password } = req.body as LoginBody;
+    const { email, password, dontRememberMe } = req.body as LoginBody;
     const normalizedIdentifier = email.toLowerCase();
 
     // Find user by email
@@ -221,7 +217,7 @@ export const login = asyncWrapper(
     res.cookie(
       "jwt",
       tokens.refresh.token,
-      getCookieOptions(tokens.refresh.expires),
+      getCookieOptions(!dontRememberMe, tokens.refresh.expires),
     );
 
     res.send({
@@ -260,7 +256,7 @@ export const logout = asyncWrapper(
     }
 
     await prisma.token.delete({ where: { id: refreshTokenDoc.id } });
-    res.clearCookie("jwt", getCookieOptions(refreshTokenDoc.tokenExpires));
+    res.clearCookie("jwt", getCookieOptions(false, refreshTokenDoc.tokenExpires));
     res.status(204).send();
   },
 );
@@ -431,6 +427,16 @@ export const sendVerificationEmail = asyncWrapper(
       const verifyEmailToken = await generateVerifyEmailToken(user);
 
       await sendVerificationEmailUtil(user, verifyEmailToken);
+
+      // Create/update notifier for verification email update
+      await prisma.notifier.create({
+        data: {
+          userId: user.id,
+          email: email,
+          notifyType: "email_validation",
+          notify: new Date(),
+        },
+      });
       res
         .status(200)
         .json({ message: "Check your email for further instructions" });
@@ -477,6 +483,13 @@ export const verifyEmail = asyncWrapper(
     // Delete any existing email verification tokens
     await prisma.token.deleteMany({
       where: { userId: user.id, tokenType: TokenType.email_validation },
+    });
+    // Create/update notifier for verification email update
+    await prisma.notifier.deleteMany({
+      where: {
+        userId: user.id,
+        notifyType: "email_validation",
+      },
     });
     res.status(204).send();
   },
