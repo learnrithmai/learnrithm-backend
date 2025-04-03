@@ -12,14 +12,12 @@ export const getUser = asyncWrapper(
     try {
       const { email } = req.params;
 
-      console.log(email);
-
       const user = await prisma.user.findUnique({
         where: { email },
       });
 
       if (!user) {
-        res.status(404).json({ errorMsg: "User not found" });
+        res.status(200).json({ errorMsg: "User not found", status: 404 });
         return;
       }
 

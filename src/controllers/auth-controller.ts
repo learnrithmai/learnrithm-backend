@@ -45,12 +45,11 @@ export const registerUser = asyncWrapper(
         password,
         country,
         referralCode,
-        method,
         dontRememberMe,
       } = req.body as RegisterUserBody;
 
       // Validate required fields.
-      if (!email || !Name || !method) {
+      if (!email || !Name) {
         res
           .status(400)
           .json({ errorMsg: "Email, Name, and method are required" });
@@ -82,71 +81,61 @@ export const registerUser = asyncWrapper(
 
       // For normal sign-ups, require and hash a password.
       let hashedPassword: string | null = null;
-      if (method === "normal") {
-        if (!password) {
-          res
-            .status(401)
-            .json({ errorMsg: "Password is required for normal registration" });
-          return;
-        }
-        hashedPassword = await bcrypt.hash(password, 10);
+      if (!password) {
+        res
+          .status(401)
+          .json({ errorMsg: "Password is required for normal registration" });
+        return;
       }
-
+      hashedPassword = await bcrypt.hash(password, 10);
       // Use a transaction for atomic operations.
-      const { createdUser, tokens } = await prisma.$transaction(async (tx) => {
-        // Create the new user.
-        const createdUser = await tx.user.create({
-          data: {
-            email: normalizedEmail,
-            imgThumbnail: image,
-            method,
-            password: method === "normal" ? hashedPassword : null,
-            Name,
-            country: userCountry as string,
-            lastLogin: new Date(),
-            plan: "free",
-          },
-        });
-
-        // Generate authentication tokens.
-        const tokens = await generateAuthTokens(createdUser);
-
-        // Set secure refresh token cookie.
-        res.cookie(
-          "jwt",
-          tokens.refresh.token,
-          getCookieOptions(!dontRememberMe, tokens.refresh.expires)
-        );
-
-        if (referralCode) {
-          const referrer = await tx.referralCode.findUnique({
-            where: { code: referralCode },
-          });
-          if (referrer) {
-            await tx.userReferredBy.create({
-              data: {
-                userId: createdUser.id,
-                referredUserId: referrer.userId,
-                email: normalizedEmail,
-                referredUserEmail: referrer.email,
-                date: new Date(),
-                refCodeUsed: referralCode,
-                referringType: "sign",
-                referringSource: "signup",
-              },
-            });
-          }
-        }
-
-        return { createdUser, tokens };
+      const createdUser = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          imgThumbnail: image,
+          method: 'normal',
+          password: hashedPassword,
+          Name,
+          country: userCountry as string,
+          lastLogin: new Date(),
+          plan: "free",
+        },
       });
 
-      if (method === "normal") {
-        await sendRegisterEmail({ Name, email });
+      await sendRegisterEmail({ Name, email });
 
-        await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
-          email,
+      await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
+        email,
+      });
+
+      // Generate authentication tokens.
+      const tokens = await generateAuthTokens(createdUser);
+
+      // Set secure refresh token cookie.
+      res.cookie(
+        "jwt",
+        tokens.refresh.token,
+        getCookieOptions(!dontRememberMe, tokens.refresh.expires)
+      );
+
+      if (referralCode) {
+        const referrer = await prisma.referralCode.findUnique({
+          where: { code: referralCode },
         });
+        if (referrer) {
+          await prisma.userReferredBy.create({
+            data: {
+              userId: createdUser.id,
+              referredUserId: referrer.userId,
+              email: normalizedEmail,
+              referredUserEmail: referrer.email,
+              date: new Date(),
+              refCodeUsed: referralCode,
+              referringType: "sign",
+              referringSource: "signup",
+            },
+          });
+        }
       }
 
       // Build the client user object.

@@ -9,16 +9,36 @@ export const registerUserSchema = {
   body: z.object({
     Name: z.string().min(1, { message: "Name is required" }),
     email: emailSchema,
-    password: z.string().optional(),
+    password: z.string(),
     country: CountrySchema.optional(),
     referralCode: z.string().optional(),
-    method: z.enum(["normal", "google"]),
     image: z.string().optional(),
     dontRememberMe: z.boolean().default(false),
   }),
 };
 
 export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
+
+
+// ────────────────────────────────────────────────────────────────
+// Register User Google Schema
+// ────────────────────────────────────────────────────────────────
+
+
+export const RegisterUserGoogleSchema = {
+  body: z.object({
+    Name: z.string().min(1, { message: "Name is required" }),
+    email: emailSchema,
+    image: z.string().optional(),
+  }),
+};
+
+export type RegisterUserGoogleBody = z.infer<typeof RegisterUserGoogleSchema.body>;
+
+// ────────────────────────────────────────────────────────────────
+// Response User Schema
+// ────────────────────────────────────────────────────────────────
+
 
 export type ResponseUserSchema = {
   id: string;
@@ -49,6 +69,20 @@ export const loginSchema = {
 };
 
 export type LoginBody = z.infer<typeof loginSchema.body>;
+
+// ────────────────────────────────────────────────────────────────
+// Login Google Schema
+// ────────────────────────────────────────────────────────────────
+
+export const LoginGoogleBody = {
+  body: z.object({
+    email: z.string().min(1, { message: "Identifier is required" }),
+    image: z.string().optional(),
+  }),
+};
+
+export type LoginGoogleBody = z.infer<typeof LoginGoogleBody.body>;
+
 
 // ────────────────────────────────────────────────────────────────
 // Forgot Password Schema
