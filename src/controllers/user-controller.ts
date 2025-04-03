@@ -42,7 +42,7 @@ export const updateUserInfo = asyncWrapper(
         id,
         name,
         lastLogin,
-        imgThumbnail,
+        image,
         birthDate,
         phoneNumber,
         institution,
@@ -62,7 +62,7 @@ export const updateUserInfo = asyncWrapper(
       if (
         !name &&
         !lastLogin &&
-        !imgThumbnail &&
+        !image &&
         !birthDate &&
         !phoneNumber &&
         !institution &&
@@ -88,9 +88,9 @@ export const updateUserInfo = asyncWrapper(
       const updatedUser = await prisma.user.update({
         where: { id },
         data: {
-          Name: name ?? user.Name,
+          name: name ?? user.name,
           lastLogin: lastLogin ?? user.lastLogin,
-          imgThumbnail: imgThumbnail ?? user.imgThumbnail,
+          image: image ?? user.image,
           birthDate: birthDate ?? user.birthDate,
           phoneNumber: phoneNumber ?? user.phoneNumber,
           institution: institution ?? user.institution,

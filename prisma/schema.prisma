@@ -23,7 +23,7 @@ model User {
   password                   String?
   method                     AuthType
   isVerified                 Boolean   @default(false)
-  Name                       String
+  name                       String
   birthDate                  DateTime?
   country                    String
   lastLogin                  DateTime?
@@ -33,7 +33,7 @@ model User {
   instagram                  String?
   facebook                   String?
   x                          String?
-  imgThumbnail               String?
+  image                      String?
   plan                       planType? @default(trial_monthly)
   ExpirationSubscription     DateTime?
   createdAt                  DateTime? @default(now())

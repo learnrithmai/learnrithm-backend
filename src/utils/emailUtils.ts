@@ -6,7 +6,7 @@ import { SendMailOptions } from "nodemailer";
 import { Attachment } from "nodemailer/lib/mailer";
 
 type User = {
-  Name: string;
+  name: string;
   email: string;
 };
 
@@ -49,7 +49,7 @@ export const sendResetPasswordEmail = async (
   const subject = "Reset password";
   const resetPasswordUrl = `${ENV.CLIENT_URL}/reset-password?token=${token}`;
   const body = `<img src="cid:logo.png" alt="logo"/>
-    <h1>Hey ${user.Name}!</h1>
+    <h1>Hey ${user.name}!</h1>
     <p>You are receiving this because you (or someone else) have requested the <strong>reset of the password</strong> for your account.</p>
     <p>Please click on the following link, or paste this into your browser to complete the process:</p>
     <a href="${resetPasswordUrl}">Reset password</a>
@@ -89,7 +89,7 @@ export const sendSuccessResetPasswordEmail = async (
 ): Promise<void> => {
   const subject = "Password Reset Successfully";
   const body = `<img src="cid:logo.png" alt="logo"/>
-      <h1>Hey ${user.Name}!</h1>
+      <h1>Hey ${user.name}!</h1>
       <p>This is a confirmation that the password for your account ${user.email} has been successfully reset.</p>
       <p>If you did not request this, please contact us immediately.</p>`;
 
@@ -131,7 +131,7 @@ export const sendVerificationEmail = async (
   const subject = "Email Verification";
   const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${token}`;
   const body = `<img src="cid:logo.png" alt="logo"/>
-    <h1>Hello ${user.Name}!</h1>
+    <h1>Hello ${user.name}!</h1>
     <p>Thank you for registering with us. Please verify your email address by clicking the link below:</p>
     <p><a href="${verificationUrl}">Verify Email</a></p>
     <p>If you did not create an account, please ignore this email or contact support.</p>
@@ -170,7 +170,7 @@ export const sendVerificationEmail = async (
 export const sendRegisterEmail = async (user: User): Promise<void> => {
   const subject = "Welcome to Learnrithm AI";
   const body = `<img src="cid:logo.png" alt="logo"/>
-    <h1>Welcome ${user.Name}!</h1>
+    <h1>Welcome ${user.name}!</h1>
     <p>Thank you for registering with Learnrithm AI. We're excited to have you on board!</p>
     <p>If you have any questions, feel free to reach out to our support team.</p>
     <p>Best regards,<br/>The Learnrithm AI Team</p>`;

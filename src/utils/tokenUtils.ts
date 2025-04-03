@@ -7,11 +7,11 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 
 type User = {
   id: string;
-  Name: string;
+  name: string;
   email: string;
   method: string;
   lastLogin: Date | null;
-  imgThumbnail: string | null;
+  image: string | null;
 };
 
 // Type guard to check if data is of type User

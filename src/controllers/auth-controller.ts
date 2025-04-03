@@ -40,16 +40,17 @@ export const registerUser = asyncWrapper(
     try {
       const {
         email,
-        Name,
+        name,
         image,
         password,
         country,
         referralCode,
+        method,
         dontRememberMe,
       } = req.body as RegisterUserBody;
 
       // Validate required fields.
-      if (!email || !Name) {
+      if (!email || !name || !method) {
         res
           .status(400)
           .json({ errorMsg: "Email, Name, and method are required" });
@@ -81,78 +82,83 @@ export const registerUser = asyncWrapper(
 
       // For normal sign-ups, require and hash a password.
       let hashedPassword: string | null = null;
-      if (!password) {
-        res
-          .status(401)
-          .json({ errorMsg: "Password is required for normal registration" });
-        return;
-      }
-      hashedPassword = await bcrypt.hash(password, 10);
-      // Use a transaction for atomic operations.
-      const createdUser = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          imgThumbnail: image,
-          method: 'normal',
-          password: hashedPassword,
-          Name,
-          country: userCountry as string,
-          lastLogin: new Date(),
-          plan: "free",
-        },
-      });
-
-      await sendRegisterEmail({ Name, email });
-
-      await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
-        email,
-      });
-
-      // Generate authentication tokens.
-      const tokens = await generateAuthTokens(createdUser);
-
-      // Set secure refresh token cookie.
-      res.cookie(
-        "jwt",
-        tokens.refresh.token,
-        getCookieOptions(!dontRememberMe, tokens.refresh.expires)
-      );
-
-      if (referralCode) {
-        const referrer = await prisma.referralCode.findUnique({
-          where: { code: referralCode },
-        });
-        if (referrer) {
-          await prisma.userReferredBy.create({
-            data: {
-              userId: createdUser.id,
-              referredUserId: referrer.userId,
-              email: normalizedEmail,
-              referredUserEmail: referrer.email,
-              date: new Date(),
-              refCodeUsed: referralCode,
-              referringType: "sign",
-              referringSource: "signup",
-            },
-          });
+      if (method === "normal") {
+        if (!password) {
+          res
+            .status(401)
+            .json({ errorMsg: "Password is required for normal registration" });
+          return;
         }
+        hashedPassword = await bcrypt.hash(password, 10);
+      }
+
+      // Use a transaction for atomic operations.
+      const { createdUser, tokens } = await prisma.$transaction(async (tx) => {
+        // Create the new user.
+        const createdUser = await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            image,
+            method,
+            password: method === "normal" ? hashedPassword : null,
+            name,
+            country: userCountry as string,
+            lastLogin: new Date(),
+            plan: "free",
+          },
+        });
+
+        // Generate authentication tokens.
+        const tokens = await generateAuthTokens(createdUser);
+
+        // Set secure refresh token cookie.
+        res.cookie(
+          "jwt",
+          tokens.refresh.token,
+          getCookieOptions(!dontRememberMe, tokens.refresh.expires)
+        );
+
+        if (referralCode) {
+          const referrer = await tx.referralCode.findUnique({
+            where: { code: referralCode },
+          });
+          if (referrer) {
+            await tx.userReferredBy.create({
+              data: {
+                userId: createdUser.id,
+                referredUserId: referrer.userId,
+                email: normalizedEmail,
+                referredUserEmail: referrer.email,
+                date: new Date(),
+                refCodeUsed: referralCode,
+                referringType: "sign",
+                referringSource: "signup",
+              },
+            });
+          }
+        }
+
+        return { createdUser, tokens };
+      });
+      await sendRegisterEmail({ name, email });
+
+      if (method === "normal") {
+        await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
+          email,
+        });
       }
 
       // Build the client user object.
       const clientUser = {
         id: createdUser.id,
-        Name: createdUser.Name,
+        name: createdUser.name,
         email: createdUser.email,
         method: createdUser.method,
         lastLogin: createdUser?.lastLogin
           ? new Date(createdUser.lastLogin).toISOString()
           : null,
-        imgThumbnail: createdUser.imgThumbnail,
-        token: {
-          accessToken: tokens.access,
-          refreshToken: tokens.refresh.token,
-          tokenExpiry: tokens.refresh.expires,
-        },
+        image: createdUser.image,
+        tokens,
       };
 
       res.status(201).json({
@@ -175,7 +181,7 @@ export const registerUser = asyncWrapper(
 
 export const login = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    const { email, password, dontRememberMe } = req.body as LoginBody;
+    const { email, password, dontRememberMe, image } = req.body as LoginBody;
     const normalizedIdentifier = email.toLowerCase();
 
     // Find user by email
@@ -185,28 +191,38 @@ export const login = asyncWrapper(
         id: true,
         method: true,
         password: true,
-        Name: true,
+        name: true,
         email: true,
         lastLogin: true,
-        imgThumbnail: true,
+        image: true,
         createdAt: true,
       },
     });
 
-    if (user?.method === "google") {
-      res.status(405).json({ error: "User auth used google" });
-      return;
-    }
-
-    if (!user || !user.password) {
+    if (!user) {
       res.status(404).json({ error: "User with that email not found" });
       return;
     }
 
-    // Verify password match
-    if (!(await isPasswordMatch(password, user.password))) {
-      res.status(401).json({ error: "Invalid password" });
-      return;
+    if (user?.method === 'normal') {
+      if (!email || !password || !user.password) {
+        res.status(404).json({ error: "User with that email not found" });
+        return;
+      }
+
+      // Verify password match
+      if (!(await isPasswordMatch(password, user.password))) {
+        res.status(401).json({ error: "Invalid password" });
+        return;
+      }
+    } else if (user?.method === 'google') {
+      if (!email) {
+        res.status(404).json({ error: "User with that email not found" });
+        return;
+      }
+      if (image) {
+        await prisma.user.update({ where: { email }, data: { image } });
+      }
     }
 
     // Generate authentication tokens
@@ -220,7 +236,7 @@ export const login = asyncWrapper(
     );
 
     res.send({
-      success: `Login successful: ${user.Name}!`,
+      success: `Login successful: ${user.name}!`,
       user,
       accessToken: tokens.access,
     });
@@ -245,7 +261,7 @@ export const logout = asyncWrapper(
     const refreshTokenDoc = await prisma.token.findFirst({
       where: {
         token: refreshToken,
-        tokenType: TokenType.email_validation,
+        tokenType: TokenType.refresh,
       },
     });
 
@@ -289,11 +305,19 @@ export const refreshTokens = asyncWrapper(
       // Assume generateAccessToken returns an object with 'token' (string) and 'expiresAt' (number in seconds)
       const { token: newAccessToken, expires } =
         await generateAccessToken(user);
+
       res.status(200).json({
         success: "Access token regenerated",
-        accessToken: { token: newAccessToken },
-        expiresAt: expires,
-        refreshToken,
+        tokens: {
+          access: {
+            token: newAccessToken,
+            expires: expires,
+          },
+          refresh: {
+            token: refreshToken,
+            expires: refreshTokenDoc.tokenExpires,
+          },
+        },
       });
     } catch (error) {
       if ((error as Error)?.name === "TokenExpiredError") {
