@@ -1,8 +1,8 @@
 export interface User {
-  Name: string;
+  name: string;
   email: string;
   plan: string;
-  imgThumbnail: string;
+  image: string;
   isVerified: boolean;
   ExpirationSubscription: Date;
 }

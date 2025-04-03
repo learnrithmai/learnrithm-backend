@@ -23,7 +23,7 @@ export async function getUserFullName(userId: string): Promise<string> {
   if (!user) {
     throw new Error("User not found");
   }
-  return `${user.Name}`;
+  return `${user.name}`;
 }
 
 /**

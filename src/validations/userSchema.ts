@@ -11,7 +11,7 @@ export const updateInfoSchema = {
       (arg) => (arg ? new Date(arg as string) : undefined),
       z.date().optional(),
     ),
-    imgThumbnail: z.string().optional(),
+    image: z.string().optional(),
     birthDate: z.preprocess(
       (arg) => (arg ? new Date(arg as string) : undefined),
       z.date().optional(),

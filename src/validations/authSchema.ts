@@ -7,12 +7,13 @@ import { emailSchema, CountrySchema } from "@/validations";
 
 export const registerUserSchema = {
   body: z.object({
-    Name: z.string().min(1, { message: "Name is required" }),
+    name: z.string().min(1, { message: "Name is required" }),
     email: emailSchema,
-    password: z.string(),
+    password: z.string().optional(),
     country: CountrySchema.optional(),
     referralCode: z.string().optional(),
     image: z.string().optional(),
+    method: z.enum(['normal', 'google']),
     dontRememberMe: z.boolean().default(false),
   }),
 };
@@ -21,19 +22,21 @@ export type RegisterUserBody = z.infer<typeof registerUserSchema.body>;
 
 
 // ────────────────────────────────────────────────────────────────
-// Register User Google Schema
+// Login Schema
 // ────────────────────────────────────────────────────────────────
 
-
-export const RegisterUserGoogleSchema = {
+export const loginSchema = {
   body: z.object({
-    Name: z.string().min(1, { message: "Name is required" }),
-    email: emailSchema,
+    email: z.string().min(1, { message: "Identifier is required" }),
+    password: z.string().optional(),
     image: z.string().optional(),
+    dontRememberMe: z.boolean().default(false),
+    method: z.enum(['normal', 'google']),
   }),
 };
 
-export type RegisterUserGoogleBody = z.infer<typeof RegisterUserGoogleSchema.body>;
+export type LoginBody = z.infer<typeof loginSchema.body>;
+
 
 // ────────────────────────────────────────────────────────────────
 // Response User Schema
@@ -46,43 +49,18 @@ export type ResponseUserSchema = {
   email: string;
   method: string;
   lastLogin: string;
-  imgThumbnail?: string;
-  token: {
-    accessToken: string;
-    refreshToken: string;
-    tokenExpiry: number;
-  };
+  image?: string;
+  tokens: {
+    access: {
+      token: string;
+      expires: Date;
+    };
+    refresh: {
+      token: string;
+      expires: Date;
+    };
+  }
 };
-
-// ────────────────────────────────────────────────────────────────
-// Login Schema
-// ────────────────────────────────────────────────────────────────
-
-export const loginSchema = {
-  body: z.object({
-    email: z.string().min(1, { message: "Identifier is required" }),
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-    dontRememberMe: z.boolean().default(false),
-  }),
-};
-
-export type LoginBody = z.infer<typeof loginSchema.body>;
-
-// ────────────────────────────────────────────────────────────────
-// Login Google Schema
-// ────────────────────────────────────────────────────────────────
-
-export const LoginGoogleBody = {
-  body: z.object({
-    email: z.string().min(1, { message: "Identifier is required" }),
-    image: z.string().optional(),
-  }),
-};
-
-export type LoginGoogleBody = z.infer<typeof LoginGoogleBody.body>;
-
 
 // ────────────────────────────────────────────────────────────────
 // Forgot Password Schema

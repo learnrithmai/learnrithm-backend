@@ -21,7 +21,6 @@ import prisma from "./config/db/prisma";
 import { ENV } from "./validations/envSchema";
 import logger from "./utils/chalkLogger";
 import apiV2Routes from "@routes/api/v2";
-import apiV3Routes from "@routes/api/v3";
 import { errorHandler } from "./middleware/errorHandler";
 import {
   morganErrorHandler,
@@ -90,7 +89,6 @@ app.get("/", (req: Request, res: Response) => {
 
 // API routes
 app.use("/api/v2", apiV2Routes);
-app.use("/api/v3", apiV3Routes);
 
 // Global error handling
 app.use(errorHandler);
