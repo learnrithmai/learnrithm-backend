@@ -297,11 +297,10 @@ export const refreshTokens = asyncWrapper(
       const user = await prisma.user.findUnique({
         where: { id: refreshTokenDoc.userId, method: "normal" },
       });
-      if (!user || !user.password) {
+      if (!user) {
         res.status(404).json({ error: "User with that email not found" });
         return;
       }
-      // Generate a new access token.
       // Assume generateAccessToken returns an object with 'token' (string) and 'expiresAt' (number in seconds)
       const { token: newAccessToken, expires } =
         await generateAccessToken(user);

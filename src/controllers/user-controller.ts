@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { hash } from "bcryptjs";
 import prisma from "@/config/db/prisma";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
+import { profile } from "@/validations/userSchema";
+import { getCurrentSubscription, getUserSubscriptions } from "@/utils/userUtils";
 
 /**
  * Get a single user by ID.
@@ -19,11 +21,37 @@ export const getUser = asyncWrapper(
       if (!user) {
         res.status(200).json({ errorMsg: "User not found", status: 404 });
         return;
-      }
+      };
+
+      const subscriptions = await prisma.subscription.findMany({
+        where: { userId: user.id },
+      });
+
+      const userProfile: profile = {
+        userId: user.id,
+        country: user.country,
+        createdAt: user.createdAt ? new Date(user.createdAt) : undefined,
+        userDetails: {
+          name: user.name,
+          lastLogin: user.lastLogin ? new Date(user.lastLogin) : undefined,
+          email: user.email,
+          isVerified: user.isVerified,
+          image: user?.image ?? undefined,
+          birthDate: user?.birthDate ?? undefined,
+          phoneNumber: user.phoneNumber ?? undefined,
+          institution: user.institution ?? undefined,
+          linkedin: user.linkedin ?? undefined,
+          instagram: user.instagram ?? undefined,
+          facebook: user.facebook ?? undefined,
+          x: user.x ?? undefined,
+        },
+        subscriptions: getUserSubscriptions(subscriptions),
+        currentSubscription: getCurrentSubscription(subscriptions),
+      };
 
       res.status(200).json({
         success: `User ${user.email} fetched successfully!`,
-        user,
+        user: userProfile,
       });
     } catch (error) {
       next(error);
