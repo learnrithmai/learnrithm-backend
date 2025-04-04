@@ -1,5 +1,45 @@
 import { z } from "zod";
 
+
+export type profile = {
+  userId: string;
+  country: string;
+  createdAt?: Date;
+  userDetails: {
+    name: string;
+    email: string;
+    isVerified: boolean;
+    lastLogin?: Date;
+    image?: string;
+    birthDate?: Date;
+    phoneNumber?: string;
+    institution?: string;
+    linkedin?: string;
+    instagram?: string;
+    facebook?: string;
+    x?: string;
+  },
+  subscriptions?: {
+    subscriptionId: string;
+    status: string;
+    trialEndsAt?: Date,
+    cardBrand: string;
+    cardLastFour: string;
+    subscriptionStartAt: Date;
+    subscriptionRenewsAt: Date;
+    product: string;
+  }[];
+  currentSubscription?: {
+    subscriptionId: string;
+    status: string;
+    trialEndsAt?: Date;
+    cardBrand: string;
+    cardLastFour: string;
+    subscriptionStartAt: Date;
+    subscriptionRenewsAt: Date;
+    product: string;
+  };
+}
 // ────────────────────────────────────────────────────────────────
 // Update User Info Schema
 // ────────────────────────────────────────────────────────────────
