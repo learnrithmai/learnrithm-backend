@@ -18,7 +18,6 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
 } from "@/validations/authSchema";
-import auth from "@/middleware/auth/passportJWTAuth";
 
 const router = Router({ mergeParams: true });
 
@@ -26,7 +25,16 @@ const router = Router({ mergeParams: true });
 router.post("/register", validate(registerUserSchema), registerUser);
 
 //test
-router.get("/test", auth(), (req, res) => {
+router.get("/test", async (req, res) => {
+  const ip =
+    req.headers["x-forwarded-for"]?.toString().split(",")[0] ||
+    req.socket.remoteAddress;
+
+  // Optional: Use fetch to call a GeoIP API
+  const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+  const geoData = await geoRes.json();
+
+  console.log("User country:", geoData.country_name);
   res.send("test");
 });
 
