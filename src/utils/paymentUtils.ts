@@ -84,9 +84,21 @@ The refunded amount has been processed and reversed accordingly.`
   }
 }
 
-// Get the plan name according to the product name and if on free trial
 
-type ProductType = "Yearly Plan" | "Monthly Plan" | "Weekly Plan";
+type ProductType =
+  | "Yearly Plan Africa"
+  | "Monthly Plan Africa"
+  | "Weekly Plan Africa"
+  | "Yearly Plan Asia"
+  | "Monthly Plan Asia"
+  | "Weekly Plan Asia"
+  | "Yearly Plan Global"
+  | "Monthly Plan Global"
+  | "Weekly Plan Global"
+  | "Yearly Plan"
+  | "Monthly Plan"
+  | "Weekly Plan";
+
 type PromisedPlan =
   | "trial_yearly"
   | "trial_monthly"
@@ -95,32 +107,27 @@ type PromisedPlan =
   | "charged_monthly"
   | "charged_weekly";
 
+/**
+ * Returns a formatted plan identifier based on the product type and trial status.
+ * The function dynamically extracts the billing period (Yearly, Monthly, Weekly)
+ * from the product string and prepends either "trial_" or "charged_" accordingly.
+ *
+ * @param product - The product type string.
+ * @param onTrial - Boolean indicating if the plan is a trial.
+ * @returns A string representing the promised plan.
+ * @throws Error if the product type does not start with a recognized billing period.
+ */
 export function formattedPlan(
   product: ProductType,
   onTrial: boolean
 ): PromisedPlan {
+  // Extract the billing period by taking the first word and converting it to lowercase.
+  const period = product.split(" ")[0].toLowerCase();
 
-  if (onTrial) {
-    switch (product) {
-      case "Yearly Plan":
-        return "trial_yearly";
-      case "Monthly Plan":
-        return "trial_monthly";
-      case "Weekly Plan":
-        return "trial_weekly";
-      default:
-        throw new Error("Invalid product type for trial plan");
-    }
-  } else {
-    switch (product) {
-      case "Yearly Plan":
-        return "charged_yearly";
-      case "Monthly Plan":
-        return "charged_monthly";
-      case "Weekly Plan":
-        return "charged_weekly";
-      default:
-        throw new Error("Invalid product type for charged plan");
-    }
+  if (!["yearly", "monthly", "weekly"].includes(period)) {
+    throw new Error("Invalid product type: unrecognized billing period");
   }
+
+  const prefix = onTrial ? "trial" : "charged";
+  return `${prefix}_${period}` as PromisedPlan;
 }

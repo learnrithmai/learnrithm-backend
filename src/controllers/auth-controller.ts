@@ -152,6 +152,8 @@ export const registerUser = asyncWrapper(
           ? new Date(createdUser.lastLogin).toISOString()
           : null,
         image: createdUser.image,
+        plan: createdUser.plan,
+        country: createdUser.country,
         tokens,
       };
 
@@ -190,6 +192,8 @@ export const login = asyncWrapper(
         lastLogin: true,
         image: true,
         createdAt: true,
+        plan: true,
+        country: true
       },
     });
 
@@ -231,6 +235,8 @@ export const login = asyncWrapper(
         ? new Date(user.lastLogin).toISOString()
         : null,
       image: user.image,
+      plan: user.plan,
+      country: user.country,
       tokens,
     };
 
