@@ -129,7 +129,7 @@ cardLastFour              String?
 status                    String
 trialEndsAt               String?
 
-product                   planType
+product                   string
 
 subscriptionStartAt       String
 subscriptionRenewsAt      String
