@@ -1,5 +1,6 @@
 import prisma from "@/config/db/prisma";
 import { getCookieOptions } from "@/config/security/cookieOptions";
+import { countryCodes } from "@/data/countries-per-abr";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
 import { isPasswordMatch } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
@@ -75,7 +76,8 @@ export const registerUser = asyncWrapper(
           req.socket.remoteAddress;
         if (userIp) {
           const geo = geoip.lookup(userIp);
-          userCountry = geo?.country || "Unknown";
+          const country = geo?.country || "Unknown";
+          userCountry = countryCodes[country] || "United States";
         }
       }
 
