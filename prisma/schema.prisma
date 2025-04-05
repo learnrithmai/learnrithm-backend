@@ -34,7 +34,7 @@ model User {
   facebook                   String?
   x                          String?
   image                      String?
-  plan                       planType? @default(trial_monthly)
+  plan                       planType? @default(free)
   ExpirationSubscription     DateTime?
   createdAt                  DateTime? @default(now())
 }
