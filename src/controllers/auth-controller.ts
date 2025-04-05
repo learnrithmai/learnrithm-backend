@@ -46,7 +46,6 @@ export const registerUser = asyncWrapper(
         country,
         referralCode,
         method,
-        dontRememberMe,
       } = req.body as RegisterUserBody;
 
       // Validate required fields.
@@ -111,13 +110,6 @@ export const registerUser = asyncWrapper(
         // Generate authentication tokens.
         const tokens = await generateAuthTokens(createdUser);
 
-        // Set secure refresh token cookie.
-        res.cookie(
-          "jwt",
-          tokens.refresh.token,
-          getCookieOptions(!dontRememberMe, tokens.refresh.expires)
-        );
-
         if (referralCode) {
           const referrer = await tx.referralCode.findUnique({
             where: { code: referralCode },
@@ -181,12 +173,12 @@ export const registerUser = asyncWrapper(
 
 export const login = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    const { email, password, dontRememberMe, image } = req.body as LoginBody;
+    const { email, password, image, method } = req.body as LoginBody;
     const normalizedIdentifier = email.toLowerCase();
 
     // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email: normalizedIdentifier, method: "normal" },
+      where: { email: normalizedIdentifier, method: method },
       select: {
         id: true,
         method: true,
@@ -228,17 +220,21 @@ export const login = asyncWrapper(
     // Generate authentication tokens
     const tokens = await generateAuthTokens(user);
 
-    // Set secure refresh token cookie
-    res.cookie(
-      "jwt",
-      tokens.refresh.token,
-      getCookieOptions(!dontRememberMe, tokens.refresh.expires)
-    );
+    const clientUser = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      method: user.method,
+      lastLogin: user?.lastLogin
+        ? new Date(user.lastLogin).toISOString()
+        : null,
+      image: user.image,
+      tokens,
+    };
 
     res.send({
       success: `Login successful: ${user.name}!`,
-      user,
-      accessToken: tokens.access,
+      user: clientUser,
     });
   }
 );

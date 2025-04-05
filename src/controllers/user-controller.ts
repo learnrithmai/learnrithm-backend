@@ -50,6 +50,7 @@ export const getUser = asyncWrapper(
       };
 
       res.status(200).json({
+        status: 200,
         success: `User ${user.email} fetched successfully!`,
         user: userProfile,
       });
