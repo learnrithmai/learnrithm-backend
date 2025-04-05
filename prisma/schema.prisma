@@ -123,8 +123,8 @@ id                        String       @id @map("_id")
 userId                    String       
 email                     String
 
-cardBrand                 String
-cardLastFour              String
+cardBrand                 String?
+cardLastFour              String?
 
 status                    String
 trialEndsAt               String?
