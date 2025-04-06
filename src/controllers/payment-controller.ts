@@ -289,7 +289,7 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
             cardLastFour: attributes.card_last_four,
             billingReason: attributes.billing_reason,
             status: attributes.status,
-            product: attributes.product_name,
+            product: subscription.product,
             subscriptionStartAt: attributes.updated_at,
             subscriptionEndAt: subscription.subscriptionRenewsAt,
           },
@@ -299,7 +299,7 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         await sendDynamicEmail(
           { name: subscription.email, email: subscription.email },
           {
-            product: attributes.product_name,
+            product: subscription.product,
             id: data.id,
             orderDate: attributes.updated_at,
             orderAmount: attributes.total,
@@ -343,7 +343,7 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
             billingReason: attributes.billing_reason,
             cardLastFour: attributes.card_last_four,
             status: attributes.status,
-            product: attributes.product_name,
+            product: subscription.product,
             subscriptionStartAt: attributes.updated_at,
             subscriptionEndAt: subscription.subscriptionRenewsAt,
           },
@@ -355,7 +355,7 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         await sendDynamicEmail(
           { name: subscription.email, email: subscription.email },
           {
-            product: attributes.product_name,
+            product: subscription.product,
             id: data.id,
             orderDate: attributes.updated_at,
             orderAmount: attributes.total,
@@ -392,7 +392,7 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
             billingReason: attributes.billing_reason,
             cardLastFour: attributes.card_last_four,
             status: attributes.status,
-            product: attributes.product_name,
+            product: subscription.product,
             subscriptionStartAt: attributes.updated_at,
             subscriptionEndAt: subscription.subscriptionRenewsAt,
           },
@@ -403,7 +403,7 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         await sendDynamicEmail(
           { name: subscription.email, email: subscription.email },
           {
-            product: attributes.product_name,
+            product: subscription.product,
             id: data.id,
             orderDate: attributes.updated_at,
             orderAmount: attributes.total,
