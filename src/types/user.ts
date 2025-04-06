@@ -4,5 +4,4 @@ export interface User {
   plan: string;
   image: string;
   isVerified: boolean;
-  ExpirationSubscription: Date;
 }

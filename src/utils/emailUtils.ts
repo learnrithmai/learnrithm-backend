@@ -10,6 +10,7 @@ type User = {
   email: string;
 };
 
+
 // @ts-expect-error : test is not defined in process.env
 if (ENV.NODE_ENV !== "test") {
   try {
@@ -196,4 +197,176 @@ export const sendRegisterEmail = async (user: User): Promise<void> => {
   const mailInfo = await sendEmail(mailOptions);
   console.log("Message: %s", JSON.stringify(mailInfo));
   logger.info(`A welcome email has been sent to ${user.email}`);
+};
+
+// Define a union type for subscription events
+export type SubscriptionEvent =
+  | "subscription_created"
+  | "subscription_updated"
+  | "subscription_cancelled"
+  | "subscription_expired"
+  | "subscription_payment_success"
+  | "subscription_payment_failed"
+  | "subscription_payment_refunded";
+
+export interface PaymentDetails {
+  product: string;
+  id: string;
+  orderAmount?: number;
+  orderDate?: string | Date;
+  cardBrand?: string;
+  cardLastFour?: string;
+  country?: string;
+  trialEndsAt?: string | Date;
+  subscriptionRenewsAt?: string | Date;
+  status?: string;
+}
+
+// This interface holds the email content
+export interface EmailContent {
+  subject: string;
+  body: string;
+}
+
+// Helper to dynamically generate email content based on the event
+const getEmailContent = (
+  event: SubscriptionEvent,
+  user: User,
+  details: PaymentDetails
+): EmailContent => {
+  // Default date formatting helper
+  const formatDate = (date?: string | Date) =>
+    date ? format(new Date(date), "yyyy-MM-dd") : "N/A";
+
+  switch (event) {
+    case "subscription_created":
+      return {
+        subject: `${details.product} Recipe from Learnrithm AI`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>Thank you for subscribing to ${details.product} with Learnrithm AI. We're excited to have you onboard!</p>
+          <p>Order ID: ${details.id}</p>
+          <p>Order Date: ${formatDate(details.orderDate)}</p>
+          <p>Order Amount: ${details.orderAmount || "N/A"}</p>
+          <p>Card Brand: ${details.cardBrand || "N/A"}</p>
+          <p>Card Last Four: ${details.cardLastFour || "N/A"}</p>
+          <p>Trial Ends: ${formatDate(details.trialEndsAt)}</p>
+          <p>Renewal Date: ${formatDate(details.subscriptionRenewsAt)}</p>
+          <p>Order Status: ${details.status || "N/A"}</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    case "subscription_updated":
+      return {
+        subject: `Your ${details.product} Subscription has been updated`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>Your subscription for ${details.product} has been updated successfully.</p>
+          <p>Order ID: ${details.id}</p>
+          <p>Status: ${details.status || "N/A"}</p>
+          <p>New Renewal Date: ${formatDate(details.subscriptionRenewsAt)}</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    case "subscription_cancelled":
+      return {
+        subject: `Your ${details.product} Subscription has been cancelled`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>Your subscription for ${details.product} has been cancelled. We're sorry to see you go.</p>
+          <p>If you have any feedback or questions, please contact our support team.</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    case "subscription_expired":
+      return {
+        subject: `Your ${details.product} Subscription has expired`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>Your subscription for ${details.product} has expired.</p>
+          <p>To continue enjoying our services, please consider renewing your subscription.</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    case "subscription_payment_success":
+      return {
+        subject: `Payment Successful for ${details.product}`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>We have received your payment for ${details.product} successfully.</p>
+          <p>Order ID: ${details.id}</p>
+          <p>Order Date: ${formatDate(details.orderDate)}</p>
+          <p>Amount: ${details.orderAmount || "N/A"}</p>
+          <p>Thank you for your payment!</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    case "subscription_payment_failed":
+      return {
+        subject: `Payment Failed for ${details.product}`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>Unfortunately, your payment for ${details.product} has failed.</p>
+          <p>Please update your payment details and try again.</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    case "subscription_payment_refunded":
+      return {
+        subject: `Payment Refunded for ${details.product}`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>Your payment for ${details.product} has been refunded.</p>
+          <p>If you have any questions, please contact our support team.</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+
+    default:
+      return {
+        subject: `Notification from Learnrithm AI`,
+        body: `<img src="cid:logo.png" alt="logo"/>
+          <h1>Hello ${user.name}!</h1>
+          <p>This is a notification regarding your subscription.</p>
+          <p>Best regards,<br/>The Learnrithm AI Team</p>`,
+      };
+  }
+};
+
+// The refactored, dynamic email sending function
+export const sendDynamicEmail = async (
+  user: User,
+  paymentDetails: PaymentDetails,
+  event: SubscriptionEvent
+): Promise<void> => {
+  const { subject, body } = getEmailContent(event, user, paymentDetails);
+
+  const attachments = [
+    {
+      filename: "logo.svg",
+      path: "public/images/Learnrithm.png",
+      cid: "logo.png",
+    },
+  ];
+
+  const mailOptions: SendMailOptions = {
+    from: ENV.ZOHO_SMTP_USERNAME
+      ? `Learnrithm AI <${ENV.ZOHO_SMTP_USERNAME}>`
+      : "support@learnrithm.com",
+    to: user.email,
+    subject,
+    html: body,
+    attachments,
+  };
+
+  try {
+    const mailInfo = await sendEmail(mailOptions);
+    logger.info(
+      `Email sent to ${user.email} for event ${event} with info: ${JSON.stringify(
+        mailInfo
+      )}`
+    );
+  } catch (error) {
+    logger.error(`Failed to send email to ${user.email}: ${error}`);
+    throw error;
+  }
 };
