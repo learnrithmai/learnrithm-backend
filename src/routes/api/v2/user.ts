@@ -5,14 +5,15 @@ import {
   getUserPlanCountry,
   updateUserInfo,
   UpdateUserPassword,
-  updateUserPlan,
+  DeleteUserInfo,
+  UpdateUserLanguage
 } from "@controllers/user-controller";
 // import auth from "@/middleware/auth/passportJWTAuth";
 import {
   getUserSchema,
   updateInfoSchema,
+  updateLanguageSchema,
   updatePasswordSchema,
-  updatePlanSchema,
 } from "@/validations/userSchema";
 
 const router = Router({ mergeParams: true });
@@ -30,11 +31,14 @@ router.post(
   UpdateUserPassword,
 );
 
-// Update user plan
-router.post("/update-plan", validate(updatePlanSchema), updateUserPlan);
-
-// Update user infos
+// Update user infos UpdateUserLanguage
 router.post("/update-info", validate(updateInfoSchema), updateUserInfo);
+
+// Update user language 
+router.post("/update-language", validate(updateLanguageSchema), UpdateUserLanguage);
+
+// Delete date user infos
+router.post("/delete-user/:email", validate(getUserSchema), DeleteUserInfo);
 
 export default router;
 

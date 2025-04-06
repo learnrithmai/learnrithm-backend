@@ -23,7 +23,7 @@ export const getUser = asyncWrapper(
         return;
       };
 
-      const subscriptions = await prisma.subscription.findMany({
+      const subscriptions = await prisma.subscriptionInvoice.findMany({
         where: { userId: user.id },
       });
 
@@ -181,6 +181,60 @@ export const updateUserInfo = asyncWrapper(
   },
 );
 
+
+/**
+ * Update an existing user language
+ */
+
+export const UpdateUserLanguage = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const {
+        id,
+        language
+      } = req.body;
+
+      // Validate that the user ID is provided
+      if (!id) {
+        res.status(400).json({ error: "User ID is required" });
+        return;
+      }
+
+      // Check if there's data to update
+      if (
+        !language
+      ) {
+        res.status(400).json({ error: "No language to update" });
+        return;
+      }
+
+      // Verify the user exists
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      // Update the merged user record
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          language
+        },
+      });
+
+      res.status(200).json({
+        success: `User ${updatedUser.email} language updated successfully to ${language}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 /**
  * Update an existing user Password
  */
@@ -234,51 +288,30 @@ export const UpdateUserPassword = asyncWrapper(
   },
 );
 
+
 /**
- * Update an existing user Plan
+ * Delete User Info
  */
 
-export const updateUserPlan = asyncWrapper(
+export const DeleteUserInfo = asyncWrapper(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id, plan } = req.body;
+      const { email } = req.params;
 
-      // Validate that the user ID is provided
-      if (!id) {
-        res.status(400).json({ errorMsg: "User ID is required" });
-        return;
-      }
-
-      if (!plan) {
-        res.status(400).json({
-          errorMsg:
-            "plan and Expiration Subscription is required when updating user plan",
-        });
-        return;
-      }
+      const user = await prisma.user.update({
+        where: { email },
+        data: {
+          archived: true
+        }
+      });
 
       // Verify the user exists
-      const user = await prisma.user.findUnique({
-        where: { id },
-      });
-
       if (!user) {
-        res.status(404).json({ errorMsg: "User not found" });
+        res.status(200)
         return;
       }
 
-      // Update the user plan
-      const updatedUser = await prisma.user.update({
-        where: { id },
-        data: {
-          plan: plan ?? user.plan,
-        },
-      });
-
-      res.status(200).json({
-        success: `User ${updatedUser.email}'s plan updated successfully`,
-        user: updatedUser,
-      });
+      res.status(200);
     } catch (error) {
       next(error);
     }
