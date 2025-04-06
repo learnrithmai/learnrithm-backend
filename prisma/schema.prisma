@@ -36,6 +36,8 @@ model User {
   image                      String?
   plan                       planType? @default(free)
   createdAt                  DateTime? @default(now())
+  archived                   Boolean   @default(false)
+  language                   String    @default("english")
 }
 
 

@@ -106,6 +106,7 @@ export const registerUser = asyncWrapper(
             country: userCountry as string,
             lastLogin: new Date(),
             plan: "free",
+            language: "english",
           },
         });
 
@@ -182,7 +183,7 @@ export const login = asyncWrapper(
 
     // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email: normalizedIdentifier, method: method },
+      where: { email: normalizedIdentifier, method: method, archived: false },
       select: {
         id: true,
         method: true,

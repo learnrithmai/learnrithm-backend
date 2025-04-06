@@ -1,40 +1,55 @@
-import { Subscription } from "@prisma/client";
+import { SubscriptionInvoice } from "@prisma/client";
 
 type SubscriptionProfile = {
   subscriptionId: string;
+  orderId: string;
+
   status: string;
-  trialEndsAt?: Date;
-  cardBrand: string;
-  cardLastFour: string;
-  subscriptionStartAt: Date;
-  subscriptionRenewsAt: Date;
   product: string;
+
+  cardBrand?: string;
+  cardLastFour?: string;
+
+  subscriptionStartAt: Date;
+  subscriptionEndAt: Date;
+
+  billingReason: string;
 };
 
-export const getUserSubscriptions = (subscriptions: Subscription[]): SubscriptionProfile[] => {
+export const getUserSubscriptions = (subscriptions: SubscriptionInvoice[]): SubscriptionProfile[] => {
   return subscriptions.map((sub) => ({
-    subscriptionId: sub.id,
+    subscriptionId: sub.subscriptionId,
+    orderId: sub.id,
+
     status: sub.status,
-    trialEndsAt: sub.trialEndsAt ? new Date(sub.trialEndsAt) : undefined,
-    cardBrand: sub.cardBrand,
-    cardLastFour: sub.cardLastFour,
-    subscriptionStartAt: new Date(sub.subscriptionStartAt),
-    subscriptionRenewsAt: new Date(sub.subscriptionRenewsAt),
     product: sub.product,
+
+    cardBrand: sub.cardBrand || undefined,
+    cardLastFour: sub.cardLastFour || undefined,
+
+    subscriptionStartAt: new Date(sub.subscriptionStartAt),
+    subscriptionEndAt: new Date(sub.subscriptionEndAt),
+
+    billingReason: sub.billingReason
   }));
 };
 
 
-export const getCurrentSubscription = (subscriptions: Subscription[]): SubscriptionProfile | undefined => {
-  const currentSubscription = subscriptions.find((sub) => sub.status === "paid" || sub.status === "trialing");
+export const getCurrentSubscription = (subscriptions: SubscriptionInvoice[]): SubscriptionProfile | undefined => {
+  const currentSubscription = subscriptions.find((sub) => sub.status === "paid" || sub.status === "on_trial");
   return currentSubscription ? {
-    subscriptionId: currentSubscription.id,
+    subscriptionId: currentSubscription.subscriptionId,
+    orderId: currentSubscription.id,
+
     status: currentSubscription.status,
-    trialEndsAt: currentSubscription.trialEndsAt ? new Date(currentSubscription.trialEndsAt) : undefined,
-    cardBrand: currentSubscription.cardBrand,
-    cardLastFour: currentSubscription.cardLastFour,
-    subscriptionStartAt: new Date(currentSubscription.subscriptionStartAt),
-    subscriptionRenewsAt: new Date(currentSubscription.subscriptionRenewsAt),
     product: currentSubscription.product,
+
+    cardBrand: currentSubscription.cardBrand || undefined,
+    cardLastFour: currentSubscription.cardLastFour || undefined,
+
+    subscriptionStartAt: new Date(currentSubscription.subscriptionStartAt),
+    subscriptionEndAt: new Date(currentSubscription.subscriptionEndAt),
+
+    billingReason: currentSubscription.billingReason
   } : undefined;
 }

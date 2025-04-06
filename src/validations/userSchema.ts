@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+type subscriptionProfile = {
+  subscriptionId: string;
+  orderId: string;
+  status: string;
+  product: string;
+  cardBrand?: string;
+  cardLastFour?: string;
+  subscriptionStartAt: Date;
+  subscriptionEndAt: Date;
+  billingReason: string;
+}
 
 export type profile = {
   userId: string;
@@ -19,27 +30,10 @@ export type profile = {
     facebook?: string;
     x?: string;
   },
-  subscriptions?: {
-    subscriptionId: string;
-    status: string;
-    trialEndsAt?: Date,
-    cardBrand: string;
-    cardLastFour: string;
-    subscriptionStartAt: Date;
-    subscriptionRenewsAt: Date;
-    product: string;
-  }[];
-  currentSubscription?: {
-    subscriptionId: string;
-    status: string;
-    trialEndsAt?: Date;
-    cardBrand: string;
-    cardLastFour: string;
-    subscriptionStartAt: Date;
-    subscriptionRenewsAt: Date;
-    product: string;
-  };
+  subscriptions?: subscriptionProfile[];
+  currentSubscription?: subscriptionProfile;
 }
+
 // ────────────────────────────────────────────────────────────────
 // Update User Info Schema
 // ────────────────────────────────────────────────────────────────
@@ -68,6 +62,18 @@ export const updateInfoSchema = {
 export type UpdateInfoBody = z.infer<typeof updateInfoSchema.body>;
 
 // ────────────────────────────────────────────────────────────────
+// Update User Info Schema
+// ────────────────────────────────────────────────────────────────
+export const updateLanguageSchema = {
+  body: z.object({
+    id: z.string().min(1, { message: "User ID is required" }),
+    language: z.string().min(1, { message: "User ID is required" }),
+  }),
+};
+
+export type UpdateLanguageBody = z.infer<typeof updateLanguageSchema.body>;
+
+// ────────────────────────────────────────────────────────────────
 // Update Password Schema
 // ────────────────────────────────────────────────────────────────
 
@@ -85,20 +91,6 @@ export const updatePasswordSchema = {
 
 export type UpdatePasswordBody = z.infer<typeof updatePasswordSchema.body>;
 
-// ────────────────────────────────────────────────────────────────
-// Update Plan Schema
-// ────────────────────────────────────────────────────────────────
-
-export const updatePlanSchema = {
-  body: z.object({
-    id: z.string().min(1, { message: "User ID is required" }),
-    plan: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" }),
-  }),
-};
-
-export type UpdatePlanBody = z.infer<typeof updatePlanSchema.body>;
 
 // ────────────────────────────────────────────────────────────────
 // Get User Schema
