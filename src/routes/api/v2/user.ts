@@ -2,6 +2,7 @@ import { Router } from "express";
 import validate from "express-zod-safe";
 import {
   getUser,
+  getUserPlanCountry,
   updateUserInfo,
   UpdateUserPassword,
   updateUserPlan,
@@ -18,6 +19,9 @@ const router = Router({ mergeParams: true });
 
 // Get single user
 router.get("/:email", validate(getUserSchema), getUser);
+
+// Get user country and plan for real time processing
+router.get("/get-country-plan/:email", validate(getUserSchema), getUserPlanCountry);
 
 // Update user password
 router.post(

@@ -60,6 +60,47 @@ export const getUser = asyncWrapper(
   },
 );
 
+
+/**
+ * Get a single user plan and country.
+ */
+
+export const getUserPlanCountry = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = req.params;
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          country: true,
+          plan: true,
+        }
+      });
+
+      if (!user) {
+        res.status(200).json({ errorMsg: "User not found", status: 404 });
+        return;
+      };
+
+      const userProfile = {
+        userId: user.id,
+        country: user.country,
+        plan: user.plan,
+      };
+
+      res.status(200).json({
+        status: 200,
+        user: userProfile,
+      });
+    } finally {
+      next();
+    }
+  },
+);
+
+
 /**
  * Update an existing user information
  */
