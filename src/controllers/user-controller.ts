@@ -200,7 +200,7 @@ export const UpdateUserPassword = asyncWrapper(
 export const updateUserPlan = asyncWrapper(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { id, plan, ExpirationSubscription } = req.body;
+      const { id, plan } = req.body;
 
       // Validate that the user ID is provided
       if (!id) {
@@ -208,8 +208,7 @@ export const updateUserPlan = asyncWrapper(
         return;
       }
 
-      // If plan is provided, then ExpirationSubscription must be provided as well
-      if (!plan || !ExpirationSubscription) {
+      if (!plan) {
         res.status(400).json({
           errorMsg:
             "plan and Expiration Subscription is required when updating user plan",
@@ -232,8 +231,6 @@ export const updateUserPlan = asyncWrapper(
         where: { id },
         data: {
           plan: plan ?? user.plan,
-          ExpirationSubscription:
-            ExpirationSubscription ?? user.ExpirationSubscription,
         },
       });
 

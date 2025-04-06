@@ -1,16 +1,15 @@
 import prisma from "@/config/db/prisma";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
+import { sendDynamicEmail } from "@/utils/emailUtils";
 import { formattedPlan, logPaymentMsg } from "@/utils/paymentUtils";
 import { planType } from "@prisma/client";
 import { Request, Response } from "express";
 
 export const subscriptionHandler = asyncWrapper(async (req: Request, res: Response) => {
   const { meta, data } = req.body;
-
   if (!meta?.event_name || !data?.attributes) {
     return res.status(400).json({ message: "Invalid webhook payload" });
   }
-
   const { event_name } = meta;
   const attributes = data.attributes;
 
@@ -36,20 +35,37 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
             status: attributes.status,
             trialEndsAt: `${new Date(attributes.trial_ends_at)}`,
             product: attributes.product_name,
+            subscriptionCreatedAt: `${new Date(attributes.created_at)}`,
             subscriptionStartAt: `${new Date(attributes.created_at)}`,
             subscriptionRenewsAt: `${new Date(attributes.renews_at)}`,
           },
         });
-
 
         // Update the user's plan and subscription expiration date
         await prisma.user.update({
           where: { id: user.id },
           data: {
             plan: formattedPlan(attributes.product_name, attributes.status === "on_trial") as planType,
-            ExpirationSubscription: new Date(attributes.renews_at),
           },
         });
+
+        // Send dynamic email for subscription creation
+        await sendDynamicEmail(
+          { name: user.name, email: user.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: new Date(attributes.created_at),
+            orderAmount: attributes.amount,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            country: attributes.country,
+            status: attributes.status,
+            trialEndsAt: attributes.trial_ends_at,
+            subscriptionRenewsAt: attributes.renews_at,
+          },
+          event_name
+        );
 
         await logPaymentMsg(
           {
@@ -72,28 +88,47 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
           where: { id: data.id },
           data: {
             status: attributes.status,
+            product: attributes.product_name,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
             trialEndsAt: `${new Date(attributes.trial_ends_at)}`,
             subscriptionRenewsAt: `${new Date(attributes.renews_at)}`,
-            subscriptionStartAt: `${new Date(attributes.updated_at)}`
+            subscriptionStartAt: `${new Date(attributes.updated_at)}`,
           },
         });
 
-        // Update the user's plan and subscription expiration date
-
+        // Update the user's plan (if needed)
         await prisma.user.update({
           where: { id: user.id },
           data: {
             plan: formattedPlan(attributes.product_name, attributes.status === "on_trial") as planType,
-            ExpirationSubscription: new Date(attributes.renews_at),
           },
         });
+
+        // Send dynamic email for subscription update
+        await sendDynamicEmail(
+          { name: user.name, email: user.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: new Date(attributes.updated_at),
+            orderAmount: attributes.amount,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            country: attributes.country,
+            status: attributes.status,
+            trialEndsAt: attributes.trial_ends_at,
+            subscriptionRenewsAt: attributes.renews_at,
+          },
+          event_name
+        );
 
         await logPaymentMsg(attributes, event_name);
 
         // Create/update notifier for subscription update
         await prisma.notifier.create({
           data: {
-            userId: user?.id,
+            userId: user.id,
             email: user.email,
             notifyType: "subscription_updated",
             notify: new Date(),
@@ -103,20 +138,36 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
       }
 
       case "subscription_cancelled": {
-        // Update subscription status to cancelled
-        await prisma.subscription.update({
+        // Delete the subscription record
+        await prisma.subscription.delete({
           where: { id: data.id },
-          data: { status: "cancelled" },
         });
-        console.log("Subscription Cancelled:", attributes);
 
+        // Update user's plan to free
         await prisma.user.update({
           where: { id: user.id },
           data: {
             plan: "free",
-            ExpirationSubscription: null,
           },
         });
+
+        // Send dynamic email for subscription cancellation
+        await sendDynamicEmail(
+          { name: user.name, email: user.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: new Date(),
+            orderAmount: attributes.amount,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            country: attributes.country,
+            status: attributes.status,
+            trialEndsAt: attributes.trial_ends_at,
+            subscriptionRenewsAt: attributes.renews_at,
+          },
+          event_name
+        );
 
         await logPaymentMsg(attributes, event_name);
 
@@ -139,13 +190,31 @@ export const subscriptionHandler = asyncWrapper(async (req: Request, res: Respon
           data: { status: "expired" },
         });
 
+        // Update user's plan to free
         await prisma.user.update({
           where: { id: user.id },
           data: {
             plan: "free",
-            ExpirationSubscription: null,
           },
         });
+
+        // Send dynamic email for subscription expiration
+        await sendDynamicEmail(
+          { name: user.name, email: user.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: new Date(), // using current date as expiration time
+            orderAmount: attributes.amount,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            country: attributes.country,
+            status: attributes.status,
+            trialEndsAt: attributes.trial_ends_at,
+            subscriptionRenewsAt: attributes.renews_at,
+          },
+          event_name
+        );
 
         await logPaymentMsg(attributes, event_name);
 
@@ -179,14 +248,16 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
   if (!meta?.event_name || !data?.attributes) {
     return res.status(400).json({ message: "Invalid webhook payload" });
   }
-
   const { event_name } = meta;
   const attributes = data.attributes;
+
+  const user = await prisma.user.findFirst({
+    where: { email: attributes.user_email },
+  });
 
   const subscription = await prisma.subscription.findFirst({
     where: { id: `${attributes.subscription_id}` },
   });
-
   if (!subscription) {
     return res.status(404).json({ error: "subscription with that id not found" });
   }
@@ -195,6 +266,51 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
     switch (event_name) {
       case "subscription_payment_success": {
         await logPaymentMsg({ email: subscription.email }, event_name);
+
+        if (subscription.cardBrand !== attributes.card_brand || subscription.cardLastFour !== attributes.card_last_four) {
+          // Update the subscription record with the new payment details
+          await prisma.subscription.update({
+            where: { id: subscription.id },
+            data: {
+              cardBrand: attributes.card_brand,
+              cardLastFour: attributes.card_last_four,
+            },
+          });
+        }
+
+        // Create a new invoice record for the successful payment.
+        await prisma.subscriptionInvoice.create({
+          data: {
+            id: data.id,
+            subscriptionId: subscription.id,
+            userId: subscription.userId,
+            email: subscription.email,
+            cardBrand: attributes.card_brand,
+            cardLastFour: attributes.card_last_four,
+            billingReason: attributes.billing_reason,
+            status: attributes.status,
+            product: attributes.product_name,
+            subscriptionStartAt: attributes.updated_at,
+            subscriptionEndAt: subscription.subscriptionRenewsAt,
+          },
+        });
+
+        // Send dynamic email for payment success
+        await sendDynamicEmail(
+          { name: subscription.email, email: subscription.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: attributes.updated_at,
+            orderAmount: attributes.total,
+            cardBrand: subscription.cardBrand || undefined,
+            cardLastFour: subscription.cardLastFour || undefined,
+            country: user?.country,
+            status: attributes.status,
+            subscriptionRenewsAt: subscription.subscriptionRenewsAt,
+          },
+          event_name
+        );
 
         // Create/update notifier for payment success
         await prisma.notifier.create({
@@ -208,17 +324,49 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         break;
       }
       case "subscription_payment_failed": {
-
-        // Update the user's subscription details on successful payment
+        // Update the user's subscription details on failed payment
         await prisma.user.update({
           where: { id: subscription.userId },
           data: {
             plan: "free",
-            ExpirationSubscription: null,
+          },
+        });
+
+        // Create a new invoice record for the successful payment.
+        await prisma.subscriptionInvoice.create({
+          data: {
+            id: data.id,
+            subscriptionId: subscription.id,
+            userId: subscription.userId,
+            email: subscription.email,
+            cardBrand: attributes.card_brand,
+            billingReason: attributes.billing_reason,
+            cardLastFour: attributes.card_last_four,
+            status: attributes.status,
+            product: attributes.product_name,
+            subscriptionStartAt: attributes.updated_at,
+            subscriptionEndAt: subscription.subscriptionRenewsAt,
           },
         });
 
         await logPaymentMsg({ email: subscription.email }, event_name);
+
+        // Send dynamic email for payment failure
+        await sendDynamicEmail(
+          { name: subscription.email, email: subscription.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: attributes.updated_at,
+            orderAmount: attributes.total,
+            cardBrand: subscription.cardBrand || undefined,
+            cardLastFour: subscription.cardLastFour || undefined,
+            country: user?.country,
+            status: attributes.status,
+            subscriptionRenewsAt: subscription.subscriptionRenewsAt,
+          },
+          event_name
+        );
 
         // Create/update notifier for payment failure
         await prisma.notifier.create({
@@ -232,7 +380,41 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         break;
       }
       case "subscription_payment_refunded": {
+
+        // Create a new invoice record for the successful payment.
+        await prisma.subscriptionInvoice.create({
+          data: {
+            id: data.id,
+            subscriptionId: subscription.id,
+            userId: subscription.userId,
+            email: subscription.email,
+            cardBrand: attributes.card_brand,
+            billingReason: attributes.billing_reason,
+            cardLastFour: attributes.card_last_four,
+            status: attributes.status,
+            product: attributes.product_name,
+            subscriptionStartAt: attributes.updated_at,
+            subscriptionEndAt: subscription.subscriptionRenewsAt,
+          },
+        });
         await logPaymentMsg({ email: subscription.email }, event_name);
+
+        // Send dynamic email for payment refunded
+        await sendDynamicEmail(
+          { name: subscription.email, email: subscription.email },
+          {
+            product: attributes.product_name,
+            id: data.id,
+            orderDate: attributes.updated_at,
+            orderAmount: attributes.total,
+            cardBrand: subscription.cardBrand || undefined,
+            cardLastFour: subscription.cardLastFour || undefined,
+            country: user?.country,
+            status: attributes.status,
+            subscriptionRenewsAt: subscription.subscriptionRenewsAt,
+          },
+          event_name
+        );
 
         // Create/update notifier for payment refunded
         await prisma.notifier.create({
@@ -249,7 +431,6 @@ export const subscriptionPaymentHandler = asyncWrapper(async (req: Request, res:
         console.warn(`Unhandled event type: ${event_name}`);
         return res.status(400).json({ message: "Unhandled event type" });
     }
-
     return res.status(200).json({ message: "Webhook processed successfully" });
   } catch (error) {
     console.error("Error processing webhook:", error);

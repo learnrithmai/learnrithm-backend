@@ -35,7 +35,6 @@ model User {
   x                          String?
   image                      String?
   plan                       planType? @default(free)
-  ExpirationSubscription     DateTime?
   createdAt                  DateTime? @default(now())
 }
 
@@ -117,11 +116,10 @@ model Notifier {
 //   Payment models     //
 //////////////////////////
 
-
 model Subscription {
 id                        String       @id @map("_id")
-userId                    String       
-email                     String
+userId                    String       @unique   
+email                     String       @unique
 
 cardBrand                 String?
 cardLastFour              String?
@@ -131,8 +129,26 @@ trialEndsAt               String?
 
 product                   String
 
+subscriptionCreatedAt     String
 subscriptionStartAt       String
 subscriptionRenewsAt      String
+}
+
+model SubscriptionInvoice {
+id                        String       @id @map("_id")
+subscriptionId            String
+userId                    String       
+email                     String
+
+cardBrand                 String?
+cardLastFour              String?
+
+status                    String
+product                   String
+billingReason             String
+
+subscriptionStartAt       String
+subscriptionEndAt         String
 }
 
 //////////////////////////
