@@ -29,7 +29,7 @@ export const getUser = asyncWrapper(
 
       const userProfile: profile = {
         userId: user.id,
-        country: user.country,
+        country: user.country || undefined,
         createdAt: user.createdAt ? new Date(user.createdAt) : undefined,
         userDetails: {
           name: user.name,
@@ -86,7 +86,7 @@ export const getUserPlanCountry = asyncWrapper(
 
       const userProfile = {
         userId: user.id,
-        country: user.country,
+        country: user?.country|| undefined,
         plan: user.plan,
       };
 
@@ -228,6 +228,60 @@ export const UpdateUserLanguage = asyncWrapper(
 
       res.status(200).json({
         success: `User ${updatedUser.email} language updated successfully to ${language}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+
+/**
+ * Update an existing user country
+ */
+
+export const UpdateUserCountry = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const {
+        id,
+        country
+      } = req.body;
+
+      // Validate that the user ID is provided
+      if (!id) {
+        res.status(400).json({ error: "User ID is required" });
+        return;
+      }
+
+      // Check if there's data to update
+      if (
+        !country
+      ) {
+        res.status(400).json({ error: "No language to update" });
+        return;
+      }
+
+      // Verify the user exists
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      // Update the merged user record
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          country
+        },
+      });
+
+      res.status(200).json({
+        success: `User ${updatedUser.email} country updated successfully to ${country}`,
       });
     } catch (error) {
       next(error);

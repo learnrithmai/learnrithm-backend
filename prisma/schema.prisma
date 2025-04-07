@@ -25,7 +25,7 @@ model User {
   isVerified                 Boolean   @default(false)
   name                       String
   birthDate                  DateTime?
-  country                    String
+  country                    String?
   lastLogin                  DateTime?
   institution                String?
   phoneNumber                String?   

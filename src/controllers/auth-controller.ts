@@ -1,6 +1,5 @@
 import prisma from "@/config/db/prisma";
 import { getCookieOptions } from "@/config/security/cookieOptions";
-import { countryCodes } from "@/data/countries-per-abr";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
 import { isPasswordMatch } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
@@ -30,7 +29,6 @@ import { TokenType } from "@prisma/client";
 import axios from "axios";
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
-import geoip from "geoip-lite";
 
 // ────────────────────────────────────────────────────────────────
 // REGISTER USER
@@ -68,19 +66,6 @@ export const registerUser = asyncWrapper(
         return;
       }
 
-      // Determine country from IP if not provided.
-      let userCountry = country;
-      if (!userCountry) {
-        const userIp =
-          req.headers["x-forwarded-for"]?.toString().split(",")[0] ||
-          req.socket.remoteAddress;
-        if (userIp) {
-          const geo = geoip.lookup(userIp);
-          const country = geo?.country || "Unknown";
-          userCountry = countryCodes[country] || "United States";
-        }
-      }
-
       // For normal sign-ups, require and hash a password.
       let hashedPassword: string | null = null;
       if (method === "normal") {
@@ -103,7 +88,7 @@ export const registerUser = asyncWrapper(
             method,
             password: method === "normal" ? hashedPassword : null,
             name,
-            country: userCountry as string,
+            country: country,
             lastLogin: new Date(),
             plan: "free",
             language: "english",
