@@ -14,7 +14,7 @@ type subscriptionProfile = {
 
 export type profile = {
   userId: string;
-  country: string;
+  country?: string;
   createdAt?: Date;
   userDetails: {
     name: string;
@@ -62,16 +62,28 @@ export const updateInfoSchema = {
 export type UpdateInfoBody = z.infer<typeof updateInfoSchema.body>;
 
 // ────────────────────────────────────────────────────────────────
-// Update User Info Schema
+// Update User language Info Schema
 // ────────────────────────────────────────────────────────────────
 export const updateLanguageSchema = {
   body: z.object({
     id: z.string().min(1, { message: "User ID is required" }),
-    language: z.string().min(1, { message: "User ID is required" }),
+    language: z.string().min(1, { message: "User language is required" }),
   }),
 };
 
 export type UpdateLanguageBody = z.infer<typeof updateLanguageSchema.body>;
+
+// ────────────────────────────────────────────────────────────────
+// Update User country Info Schema
+// ────────────────────────────────────────────────────────────────
+export const updateCountrySchema = {
+  body: z.object({
+    id: z.string().min(1, { message: "User ID is required" }),
+    country: z.string().min(1, { message: "User country is required" }),
+  }),
+};
+
+export type UpdateCountryBody = z.infer<typeof updateCountrySchema.body>;
 
 // ────────────────────────────────────────────────────────────────
 // Update Password Schema

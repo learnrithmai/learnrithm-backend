@@ -6,11 +6,13 @@ import {
   updateUserInfo,
   UpdateUserPassword,
   DeleteUserInfo,
-  UpdateUserLanguage
+  UpdateUserLanguage,
+  UpdateUserCountry
 } from "@controllers/user-controller";
 // import auth from "@/middleware/auth/passportJWTAuth";
 import {
   getUserSchema,
+  updateCountrySchema,
   updateInfoSchema,
   updateLanguageSchema,
   updatePasswordSchema,
@@ -36,6 +38,10 @@ router.post("/update-info", validate(updateInfoSchema), updateUserInfo);
 
 // Update user language 
 router.post("/update-language", validate(updateLanguageSchema), UpdateUserLanguage);
+
+// Update user language 
+router.post("/update-country", validate(updateCountrySchema), UpdateUserCountry);
+
 
 // Delete date user infos
 router.post("/delete-user/:email", validate(getUserSchema), DeleteUserInfo);
