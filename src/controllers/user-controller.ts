@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { hash } from "bcryptjs";
 import prisma from "@/config/db/prisma";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
@@ -10,7 +10,7 @@ import { getCurrentSubscription, getUserSubscriptions } from "@/utils/userUtils"
  */
 
 export const getUser = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const { email } = req.params;
 
@@ -55,7 +55,11 @@ export const getUser = asyncWrapper(
         user: userProfile,
       });
     } catch (error) {
-      next(error);
+      console.error("Error in registerUser:", error);
+      res.status(500).json({
+        errorMsg: "User creation failed",
+        details: error instanceof Error ? error.message : error,
+      });
     }
   },
 );
@@ -66,7 +70,7 @@ export const getUser = asyncWrapper(
  */
 
 export const getUserPlanCountry = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const { email } = req.params;
 
@@ -86,7 +90,7 @@ export const getUserPlanCountry = asyncWrapper(
 
       const userProfile = {
         userId: user.id,
-        country: user?.country|| undefined,
+        country: user?.country || null,
         plan: user.plan,
       };
 
@@ -94,8 +98,12 @@ export const getUserPlanCountry = asyncWrapper(
         status: 200,
         user: userProfile,
       });
-    } finally {
-      next();
+    } catch (error) {
+      console.error("Error in registerUser:", error);
+      res.status(500).json({
+        errorMsg: "User creation failed",
+        details: error instanceof Error ? error.message : error,
+      });
     }
   },
 );
@@ -106,7 +114,7 @@ export const getUserPlanCountry = asyncWrapper(
  */
 
 export const updateUserInfo = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const {
         id,
@@ -114,6 +122,7 @@ export const updateUserInfo = asyncWrapper(
         lastLogin,
         image,
         birthDate,
+        country,
         phoneNumber,
         institution,
         linkedin,
@@ -139,7 +148,8 @@ export const updateUserInfo = asyncWrapper(
         !linkedin &&
         !instagram &&
         !facebook &&
-        !x
+        !x &&
+        !country
       ) {
         res.status(400).json({ errorMsg: "No data to update" });
         return;
@@ -154,20 +164,22 @@ export const updateUserInfo = asyncWrapper(
         return;
       }
 
+
       // Update the merged user record
       const updatedUser = await prisma.user.update({
         where: { id },
         data: {
           name: name ?? user.name,
-          lastLogin: lastLogin ?? user.lastLogin,
-          image: image ?? user.image,
-          birthDate: birthDate ?? user.birthDate,
-          phoneNumber: phoneNumber ?? user.phoneNumber,
-          institution: institution ?? user.institution,
-          linkedin: linkedin ?? user.linkedin,
-          instagram: instagram ?? user.instagram,
-          facebook: facebook ?? user.facebook,
-          x: x ?? user.x,
+          lastLogin: lastLogin ?? user.lastLogin ?? null,
+          image: image ?? user.image ?? null,
+          birthDate: birthDate ?? user.birthDate ?? null,
+          phoneNumber: phoneNumber ?? user.phoneNumber ?? null,
+          institution: institution ?? user.institution ?? null,
+          linkedin: linkedin ?? user.linkedin ?? null,
+          instagram: instagram ?? user.instagram ?? null,
+          facebook: facebook ?? user.facebook ?? null,
+          x: x ?? user.x ?? null,
+          country: country ?? user.country ?? "United States",
         },
       });
 
@@ -176,7 +188,11 @@ export const updateUserInfo = asyncWrapper(
         user: updatedUser,
       });
     } catch (error) {
-      next(error);
+      console.error("Error in registerUser:", error);
+      res.status(500).json({
+        errorMsg: "User creation failed",
+        details: error instanceof Error ? error.message : error,
+      });
     }
   },
 );
@@ -187,7 +203,7 @@ export const updateUserInfo = asyncWrapper(
  */
 
 export const UpdateUserLanguage = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const {
         id,
@@ -230,61 +246,11 @@ export const UpdateUserLanguage = asyncWrapper(
         success: `User ${updatedUser.email} language updated successfully to ${language}`,
       });
     } catch (error) {
-      next(error);
-    }
-  },
-);
-
-
-/**
- * Update an existing user country
- */
-
-export const UpdateUserCountry = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const {
-        id,
-        country
-      } = req.body;
-
-      // Validate that the user ID is provided
-      if (!id) {
-        res.status(400).json({ error: "User ID is required" });
-        return;
-      }
-
-      // Check if there's data to update
-      if (
-        !country
-      ) {
-        res.status(400).json({ error: "No language to update" });
-        return;
-      }
-
-      // Verify the user exists
-      const user = await prisma.user.findUnique({
-        where: { id },
+      console.error("Error in registerUser:", error);
+      res.status(500).json({
+        errorMsg: "User creation failed",
+        details: error instanceof Error ? error.message : error,
       });
-
-      if (!user) {
-        res.status(404).json({ error: "User not found" });
-        return;
-      }
-
-      // Update the merged user record
-      const updatedUser = await prisma.user.update({
-        where: { id },
-        data: {
-          country
-        },
-      });
-
-      res.status(200).json({
-        success: `User ${updatedUser.email} country updated successfully to ${country}`,
-      });
-    } catch (error) {
-      next(error);
     }
   },
 );
@@ -294,7 +260,7 @@ export const UpdateUserCountry = asyncWrapper(
  */
 
 export const UpdateUserPassword = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const { id, password, newPassword } = req.body;
 
@@ -337,7 +303,11 @@ export const UpdateUserPassword = asyncWrapper(
         success: `User ${updatedUser.email} password updated successfully`,
       });
     } catch (error) {
-      next(error);
+      console.error("Error in registerUser:", error);
+      res.status(500).json({
+        errorMsg: "User creation failed",
+        details: error instanceof Error ? error.message : error,
+      });
     }
   },
 );
@@ -348,7 +318,7 @@ export const UpdateUserPassword = asyncWrapper(
  */
 
 export const DeleteUserInfo = asyncWrapper(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const { email } = req.params;
 
@@ -367,7 +337,11 @@ export const DeleteUserInfo = asyncWrapper(
 
       res.status(200);
     } catch (error) {
-      next(error);
+      console.error("Error in registerUser:", error);
+      res.status(500).json({
+        errorMsg: "User creation failed",
+        details: error instanceof Error ? error.message : error,
+      });
     }
   },
 );
