@@ -13,11 +13,14 @@ import { Request } from "express";
  * errorNotification(error, request);
  */
 export function errorNotification(err: CustomError, req: Request) {
-  const title = "Error in " + req.method + " " + req.url + " " + err.status;
+  const title = "Error in " + req.method + " " + req.url + " " + (err.status || 500);
+  
+  // Add null check for err.message and provide a fallback
+  const errorMessage = err.message ? err.message.toString() : "Unknown error occurred";
 
   notifier.notify({
     title: title,
-    message: err.message.toString(),
+    message: errorMessage,
     sound: true, // Only Notification Center or Windows Toasters
   });
 }
