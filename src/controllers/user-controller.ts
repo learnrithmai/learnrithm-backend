@@ -27,6 +27,8 @@ export const getUser = asyncWrapper(
         where: { userId: user.id },
       });
 
+      const currentSubscription = await getCurrentSubscription(subscriptions)
+
       const userProfile: profile = {
         userId: user.id,
         country: user.country || undefined,
@@ -46,7 +48,7 @@ export const getUser = asyncWrapper(
           x: user.x ?? undefined,
         },
         subscriptions: getUserSubscriptions(subscriptions),
-        currentSubscription: getCurrentSubscription(subscriptions),
+        currentSubscription,
       };
 
       res.status(200).json({
@@ -159,7 +161,7 @@ export const updateUserInfo = asyncWrapper(
       const user = await prisma.user.findUnique({
         where: { id },
       });
-      
+
       if (!user) {
         res.status(404).json({ errorMsg: "User not found" });
         return;
