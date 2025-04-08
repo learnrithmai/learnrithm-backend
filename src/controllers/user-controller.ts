@@ -159,6 +159,7 @@ export const updateUserInfo = asyncWrapper(
       const user = await prisma.user.findUnique({
         where: { id },
       });
+      
       if (!user) {
         res.status(404).json({ errorMsg: "User not found" });
         return;
