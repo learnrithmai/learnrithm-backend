@@ -17,7 +17,12 @@ type SubscriptionProfile = {
   billingReason: string;
 };
 
-export const getUserSubscriptions = (subscriptions: SubscriptionInvoice[]): SubscriptionProfile[] => {
+export const getUserSubscriptions = async (subscriptions: SubscriptionInvoice[]): Promise<SubscriptionProfile[]> => {
+
+  const subscription = await prisma.subscription.findUnique({ where: { id: subscriptions[0].subscriptionId } });
+
+  if (!subscription) return []
+
   return subscriptions.map((sub) => ({
     subscriptionId: sub.subscriptionId,
     orderId: sub.id,
@@ -25,8 +30,8 @@ export const getUserSubscriptions = (subscriptions: SubscriptionInvoice[]): Subs
     status: sub.status,
     product: sub.product,
 
-    cardBrand: sub.cardBrand || undefined,
-    cardLastFour: sub.cardLastFour || undefined,
+    cardBrand: subscription.cardBrand ?? undefined,
+    cardLastFour: subscription.cardLastFour ?? undefined,
 
     subscriptionStartAt: new Date(sub.subscriptionStartAt),
     subscriptionEndAt: new Date(sub.subscriptionEndAt),
