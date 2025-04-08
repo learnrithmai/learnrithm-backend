@@ -1,11 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import openaiService from "../../services/openai/openaiService";
 import logger from "../../utils/chalkLogger";
 
 export const generateChatResponse = async (
   req: Request,
   res: Response,
-  next: NextFunction,
 ) => {
   try {
     const { message, context } = req.body;
@@ -25,6 +24,9 @@ export const generateChatResponse = async (
     });
   } catch (error) {
     logger.error("Chat generation error:", error as string);
-    next(error);
+    res.status(500).json({
+      errorMsg: "User creation failed",
+      details: error instanceof Error ? error.message : error,
+    });
   }
-};
+}

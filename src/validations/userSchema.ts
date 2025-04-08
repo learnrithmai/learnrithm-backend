@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CountrySchema } from ".";
 
 type subscriptionProfile = {
   subscriptionId: string;
@@ -45,6 +46,7 @@ export const updateInfoSchema = {
       (arg) => (arg ? new Date(arg as string) : undefined),
       z.date().optional(),
     ),
+    country: CountrySchema.optional(),
     image: z.string().optional(),
     birthDate: z.preprocess(
       (arg) => (arg ? new Date(arg as string) : undefined),
@@ -72,18 +74,6 @@ export const updateLanguageSchema = {
 };
 
 export type UpdateLanguageBody = z.infer<typeof updateLanguageSchema.body>;
-
-// ────────────────────────────────────────────────────────────────
-// Update User country Info Schema
-// ────────────────────────────────────────────────────────────────
-export const updateCountrySchema = {
-  body: z.object({
-    id: z.string().min(1, { message: "User ID is required" }),
-    country: z.string().min(1, { message: "User country is required" }),
-  }),
-};
-
-export type UpdateCountryBody = z.infer<typeof updateCountrySchema.body>;
 
 // ────────────────────────────────────────────────────────────────
 // Update Password Schema
