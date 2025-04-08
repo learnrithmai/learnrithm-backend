@@ -23,11 +23,13 @@ export const getUser = asyncWrapper(
         return;
       };
 
-      const subscriptions = await prisma.subscriptionInvoice.findMany({
+      const AllSubscriptions = await prisma.subscriptionInvoice.findMany({
         where: { userId: user.id },
       });
 
-      const currentSubscription = await getCurrentSubscription(subscriptions)
+      const subscriptions = await getUserSubscriptions(AllSubscriptions);
+
+      const currentSubscription = await getCurrentSubscription(AllSubscriptions)
 
       const userProfile: profile = {
         userId: user.id,
@@ -47,7 +49,7 @@ export const getUser = asyncWrapper(
           facebook: user.facebook ?? undefined,
           x: user.x ?? undefined,
         },
-        subscriptions: getUserSubscriptions(subscriptions),
+        subscriptions,
         currentSubscription,
       };
 
