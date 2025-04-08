@@ -1,3 +1,4 @@
+import prisma from "@/config/db/prisma";
 import { SubscriptionInvoice } from "@prisma/client";
 
 type SubscriptionProfile = {
@@ -35,8 +36,13 @@ export const getUserSubscriptions = (subscriptions: SubscriptionInvoice[]): Subs
 };
 
 
-export const getCurrentSubscription = (subscriptions: SubscriptionInvoice[]): SubscriptionProfile | undefined => {
+export const getCurrentSubscription = async (subscriptions: SubscriptionInvoice[]): Promise<SubscriptionProfile | undefined> => {
   const currentSubscription = subscriptions.find((sub) => sub.status === "paid" || sub.status === "on_trial");
+
+  const subscription = await prisma.subscription.findUnique({ where: { id: currentSubscription?.subscriptionId } });
+
+  if (!subscription) return undefined
+
   return currentSubscription ? {
     subscriptionId: currentSubscription.subscriptionId,
     orderId: currentSubscription.id,
@@ -44,8 +50,8 @@ export const getCurrentSubscription = (subscriptions: SubscriptionInvoice[]): Su
     status: currentSubscription.status,
     product: currentSubscription.product,
 
-    cardBrand: currentSubscription.cardBrand || undefined,
-    cardLastFour: currentSubscription.cardLastFour || undefined,
+    cardBrand: subscription.cardBrand ?? "visa",
+    cardLastFour: subscription.cardLastFour ?? "9999",
 
     subscriptionStartAt: new Date(currentSubscription.subscriptionStartAt),
     subscriptionEndAt: new Date(currentSubscription.subscriptionEndAt),

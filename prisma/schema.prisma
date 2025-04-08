@@ -142,9 +142,6 @@ subscriptionId            String
 userId                    String       
 email                     String
 
-cardBrand                 String?
-cardLastFour              String?
-
 status                    String
 product                   String
 billingReason             String

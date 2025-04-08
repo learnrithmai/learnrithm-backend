@@ -13,6 +13,16 @@ type subscriptionProfile = {
   billingReason: string;
 }
 
+type CurrentSubscriptionProfile = {
+  subscriptionId: string;
+  orderId: string;
+  status: string;
+  product: string;
+  subscriptionStartAt: Date;
+  subscriptionEndAt: Date;
+  billingReason: string;
+}
+
 export type profile = {
   userId: string;
   country?: string;
@@ -32,7 +42,7 @@ export type profile = {
     x?: string;
   },
   subscriptions?: subscriptionProfile[];
-  currentSubscription?: subscriptionProfile;
+  currentSubscription?: CurrentSubscriptionProfile;
 }
 
 // ────────────────────────────────────────────────────────────────
