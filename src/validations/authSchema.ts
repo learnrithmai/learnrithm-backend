@@ -45,7 +45,7 @@ export type LoginBody = z.infer<typeof loginSchema.body>;
 
 export type ResponseUserSchema = {
   id: string;
-  Name: string;
+  name: string;
   email: string;
   method: string;
   lastLogin: string;
