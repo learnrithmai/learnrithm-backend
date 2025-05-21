@@ -19,20 +19,16 @@ export const registerUserSchema = {
     howDidYouFindUs: z.string().min(1, { message: "Please tell us how you found us" }),
     whoAreYou: z.enum(USER_TYPES, { 
       errorMap: () => ({ message: "Please select who you are" })
-    }),
+    }).optional(),
     age: z.preprocess(
       (val) => (val === '' || val === null ? undefined : Number(val)),
       z.number({ 
-        required_error: "Age is required",
         invalid_type_error: "Age must be a number" 
-      }).int().min(0).max(100)
+      }).int().min(0).max(100).optional()
     ),
-    birthDate: z.preprocess(
+    birthday: z.preprocess(
       (val) => (val === '' ? undefined : val),
-      z.coerce.date({
-        required_error: "Birth date is required",
-        invalid_type_error: "Birth date must be a valid date"
-      })
+      z.string().optional()
     ),
   }),
 };

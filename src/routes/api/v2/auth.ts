@@ -34,7 +34,7 @@ interface ValidationErrorResponse {
 
 // Create a custom error handler for validation errors
 function validationErrorHandler(err: ValidationError, req: Request, res: Response, next: NextFunction): void {
-  console.error("Validation error:", err);
+  console.error("Validation error details:", JSON.stringify(err, null, 2));
   res.status(400).json({
     errorMsg: "Validation error",
     details: err.errors || "Invalid request data"
@@ -42,9 +42,7 @@ function validationErrorHandler(err: ValidationError, req: Request, res: Respons
 }
 
 // Apply validation with the custom error handler
-const registerValidation = validate(registerUserSchema);
-
-router.post("/register", registerValidation, registerUser);
+router.post("/register", validate(registerUserSchema), validationErrorHandler, registerUser);
 
 //test
 router.get("/test", async (req, res) => {

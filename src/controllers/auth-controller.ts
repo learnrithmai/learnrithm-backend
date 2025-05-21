@@ -38,8 +38,7 @@ export const registerUser = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     try {
       console.log('Registration request body:', JSON.stringify(req.body, null, 2));
-      
-      const {
+        const {
         email,
         name,
         image,
@@ -50,7 +49,7 @@ export const registerUser = asyncWrapper(
         howDidYouFindUs,
         whoAreYou,
         age,
-        birthDate,
+        birthday,
       } = req.body as RegisterUserBody;
       
       // Validate required fields.
@@ -59,9 +58,6 @@ export const registerUser = asyncWrapper(
       if (!name) missingFields.push('name');
       if (!method) missingFields.push('method');
       if (!howDidYouFindUs) missingFields.push('howDidYouFindUs');
-      if (!whoAreYou) missingFields.push('whoAreYou');
-      if (age === undefined || age === null) missingFields.push('age');
-      if (!birthDate) missingFields.push('birthDate');
       
       if (missingFields.length > 0) {
         console.log('Registration missing fields:', missingFields);
@@ -111,9 +107,9 @@ export const registerUser = asyncWrapper(
             plan: "free",
             language: "english",
             howDidYouFindUs,
-            whoAreYou,
-            age: Number(age),
-            birthDate: birthDate instanceof Date ? birthDate : new Date(birthDate),
+            whoAreYou: whoAreYou || undefined,
+            age: age ? Number(age) : null,
+            birthDate: birthday ? new Date(birthday) : new Date(),
           },
         });
 
@@ -161,9 +157,9 @@ export const registerUser = asyncWrapper(
         plan: createdUser.plan,
         country: createdUser.country,
         howDidYouFindUs: createdUser.howDidYouFindUs,
-        whoAreYou: createdUser.whoAreYou,
-        age: createdUser.age,
-        birthDate: createdUser.birthDate.toISOString(),
+        whoAreYou: createdUser.whoAreYou || null,
+        age: createdUser.age || null,
+        birthDate: createdUser.birthDate ? createdUser.birthDate.toISOString() : null,
         tokens,
       };
 
@@ -249,10 +245,10 @@ export const login = asyncWrapper(
       image: user.image,
       plan: user.plan,
       country: user.country,
-      howDidYouFindUs: user.howDidYouFindUs,
-      whoAreYou: user.whoAreYou,
-      age: user.age,
-      birthDate: user.birthDate?.toISOString(),
+      howDidYouFindUs: user.howDidYouFindUs || null,
+      whoAreYou: user.whoAreYou || null,
+      age: user.age || null,
+      birthDate: user.birthDate?.toISOString() || null,
       tokens,
     };
 
