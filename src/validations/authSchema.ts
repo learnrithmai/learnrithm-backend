@@ -20,14 +20,20 @@ export const registerUserSchema = {
     whoAreYou: z.enum(USER_TYPES, { 
       errorMap: () => ({ message: "Please select who you are" })
     }),
-    age: z.number({ 
-      required_error: "Age is required",
-      invalid_type_error: "Age must be a number" 
-    }).int().min(0).max(100),
-    birthDate: z.coerce.date({
-      required_error: "Birth date is required",
-      invalid_type_error: "Birth date must be a valid date"
-    }),
+    age: z.preprocess(
+      (val) => (val === '' || val === null ? undefined : Number(val)),
+      z.number({ 
+        required_error: "Age is required",
+        invalid_type_error: "Age must be a number" 
+      }).int().min(0).max(100)
+    ),
+    birthDate: z.preprocess(
+      (val) => (val === '' ? undefined : val),
+      z.coerce.date({
+        required_error: "Birth date is required",
+        invalid_type_error: "Birth date must be a valid date"
+      })
+    ),
   }),
 };
 

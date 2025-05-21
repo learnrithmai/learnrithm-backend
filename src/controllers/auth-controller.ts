@@ -36,7 +36,10 @@ import { Request, Response } from "express";
 
 export const registerUser = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    try {      const {
+    try {
+      console.log('Registration request body:', JSON.stringify(req.body, null, 2));
+      
+      const {
         email,
         name,
         image,
@@ -48,11 +51,26 @@ export const registerUser = asyncWrapper(
         whoAreYou,
         age,
         birthDate,
-      } = req.body as RegisterUserBody;      // Validate required fields.
-      if (!email || !name || !method || !howDidYouFindUs || !whoAreYou || !age || !birthDate) {
+      } = req.body as RegisterUserBody;
+      
+      // Validate required fields.
+      const missingFields = [];
+      if (!email) missingFields.push('email');
+      if (!name) missingFields.push('name');
+      if (!method) missingFields.push('method');
+      if (!howDidYouFindUs) missingFields.push('howDidYouFindUs');
+      if (!whoAreYou) missingFields.push('whoAreYou');
+      if (age === undefined || age === null) missingFields.push('age');
+      if (!birthDate) missingFields.push('birthDate');
+      
+      if (missingFields.length > 0) {
+        console.log('Registration missing fields:', missingFields);
         res
           .status(400)
-          .json({ errorMsg: "All required fields must be provided" });
+          .json({ 
+            errorMsg: "All required fields must be provided", 
+            missingFields 
+          });
         return;
       }
 
@@ -94,8 +112,8 @@ export const registerUser = asyncWrapper(
             language: "english",
             howDidYouFindUs,
             whoAreYou,
-            age,
-            birthDate: new Date(birthDate),
+            age: Number(age),
+            birthDate: birthDate instanceof Date ? birthDate : new Date(birthDate),
           },
         });
 
@@ -152,12 +170,14 @@ export const registerUser = asyncWrapper(
       res.status(201).json({
         success: `User ${createdUser.email} created successfully!`,
         user: clientUser,
-      });
-    } catch (error) {
+      });    } catch (error) {
       console.error("Error in registerUser:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Registration error details:", errorMessage);
+      
       res.status(500).json({
         errorMsg: "User creation failed",
-        details: error instanceof Error ? error.message : error,
+        details: errorMessage,
       });
     }
   }

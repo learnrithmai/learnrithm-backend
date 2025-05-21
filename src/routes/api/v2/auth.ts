@@ -11,6 +11,7 @@ import {
   sendVerificationEmail,
   verifyEmail,
 } from "@controllers/auth-controller";
+import { Request, Response, NextFunction } from "express";
 import {
   registerUserSchema,
   loginSchema,
@@ -21,8 +22,29 @@ import {
 
 const router = Router({ mergeParams: true });
 
-// Register a new user
-router.post("/register", validate(registerUserSchema), registerUser);
+// Register a new user with detailed validation error handling
+interface ValidationError {
+  errors?: string | Record<string, any>;
+}
+
+interface ValidationErrorResponse {
+  errorMsg: string;
+  details: string | Record<string, any>;
+}
+
+// Create a custom error handler for validation errors
+function validationErrorHandler(err: ValidationError, req: Request, res: Response, next: NextFunction): void {
+  console.error("Validation error:", err);
+  res.status(400).json({
+    errorMsg: "Validation error",
+    details: err.errors || "Invalid request data"
+  } as ValidationErrorResponse);
+}
+
+// Apply validation with the custom error handler
+const registerValidation = validate(registerUserSchema);
+
+router.post("/register", registerValidation, registerUser);
 
 //test
 router.get("/test", async (req, res) => {
