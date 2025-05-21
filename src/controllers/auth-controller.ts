@@ -45,11 +45,14 @@ export const registerUser = asyncWrapper(
         referralCode,
         method,
         howDidYouFindUs,
+        whoAreYou,
+        age,
+        birthDate,
       } = req.body as RegisterUserBody;      // Validate required fields.
-      if (!email || !name || !method || !howDidYouFindUs) {
+      if (!email || !name || !method || !howDidYouFindUs || !whoAreYou || !age || !birthDate) {
         res
           .status(400)
-          .json({ errorMsg: "Email, Name, method, and how you found us are required" });
+          .json({ errorMsg: "All required fields must be provided" });
         return;
       }
 
@@ -90,6 +93,9 @@ export const registerUser = asyncWrapper(
             plan: "free",
             language: "english",
             howDidYouFindUs,
+            whoAreYou,
+            age,
+            birthDate: new Date(birthDate),
           },
         });
 
@@ -137,6 +143,9 @@ export const registerUser = asyncWrapper(
         plan: createdUser.plan,
         country: createdUser.country,
         howDidYouFindUs: createdUser.howDidYouFindUs,
+        whoAreYou: createdUser.whoAreYou,
+        age: createdUser.age,
+        birthDate: createdUser.birthDate.toISOString(),
         tokens,
       };
 
@@ -175,7 +184,10 @@ export const login = asyncWrapper(
         createdAt: true,
         plan: true,
         country: true,
-        howDidYouFindUs: true
+        howDidYouFindUs: true,
+        whoAreYou: true,
+        age: true,
+        birthDate: true
       },
     });
 
@@ -218,6 +230,9 @@ export const login = asyncWrapper(
       plan: user.plan,
       country: user.country,
       howDidYouFindUs: user.howDidYouFindUs,
+      whoAreYou: user.whoAreYou,
+      age: user.age,
+      birthDate: user.birthDate?.toISOString(),
       tokens,
     };
 

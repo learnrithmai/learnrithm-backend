@@ -24,7 +24,7 @@ model User {
   method                     AuthType
   isVerified                 Boolean   @default(false)
   name                       String
-  birthDate                  DateTime?
+  birthDate                  DateTime
   country                    String?
   lastLogin                  DateTime?
   institution                String?
@@ -39,6 +39,8 @@ model User {
   archived                   Boolean   @default(false)
   language                   String    @default("english")
   howDidYouFindUs            String
+  whoAreYou                  String
+  age                        Int
 }
 
 

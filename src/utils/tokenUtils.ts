@@ -12,6 +12,10 @@ type User = {
   method: string;
   lastLogin: Date | null;
   image: string | null;
+  whoAreYou?: string;
+  age?: number;
+  birthDate?: Date;
+  howDidYouFindUs?: string;
 };
 
 // Type guard to check if data is of type User

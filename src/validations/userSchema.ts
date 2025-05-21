@@ -23,7 +23,7 @@ export type profile = {
     isVerified: boolean;
     lastLogin?: Date;
     image?: string;
-    birthDate?: Date;
+    birthDate: Date;
     phoneNumber?: string;
     institution?: string;
     linkedin?: string;
@@ -31,6 +31,8 @@ export type profile = {
     facebook?: string;
     x?: string;
     howDidYouFindUs: string;
+    whoAreYou: string;
+    age: number;
   },
   subscriptions?: subscriptionProfile[];
   currentSubscription?: subscriptionProfile;

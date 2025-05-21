@@ -5,4 +5,7 @@ export interface User {
   image: string;
   isVerified: boolean;
   howDidYouFindUs: string;
+  whoAreYou: string;
+  age: number;
+  birthDate: Date;
 }

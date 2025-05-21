@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { emailSchema, CountrySchema } from "@/validations";
+import { USER_TYPES } from "@/types/constants";
 
 // ────────────────────────────────────────────────────────────────
 // Register User Schema
@@ -16,6 +17,17 @@ export const registerUserSchema = {
     method: z.enum(['normal', 'google']),
     dontRememberMe: z.boolean().default(false),
     howDidYouFindUs: z.string().min(1, { message: "Please tell us how you found us" }),
+    whoAreYou: z.enum(USER_TYPES, { 
+      errorMap: () => ({ message: "Please select who you are" })
+    }),
+    age: z.number({ 
+      required_error: "Age is required",
+      invalid_type_error: "Age must be a number" 
+    }).int().min(0).max(100),
+    birthDate: z.coerce.date({
+      required_error: "Birth date is required",
+      invalid_type_error: "Birth date must be a valid date"
+    }),
   }),
 };
 
