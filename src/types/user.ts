@@ -4,4 +4,5 @@ export interface User {
   plan: string;
   image: string;
   isVerified: boolean;
+  howDidYouFindUs: string;
 }

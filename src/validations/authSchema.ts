@@ -15,6 +15,7 @@ export const registerUserSchema = {
     image: z.string().optional(),
     method: z.enum(['normal', 'google']),
     dontRememberMe: z.boolean().default(false),
+    howDidYouFindUs: z.string().min(1, { message: "Please tell us how you found us" }),
   }),
 };
 

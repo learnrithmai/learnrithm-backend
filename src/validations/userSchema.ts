@@ -30,6 +30,7 @@ export type profile = {
     instagram?: string;
     facebook?: string;
     x?: string;
+    howDidYouFindUs: string;
   },
   subscriptions?: subscriptionProfile[];
   currentSubscription?: subscriptionProfile;

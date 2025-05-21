@@ -36,8 +36,7 @@ import { Request, Response } from "express";
 
 export const registerUser = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    try {
-      const {
+    try {      const {
         email,
         name,
         image,
@@ -45,13 +44,12 @@ export const registerUser = asyncWrapper(
         country,
         referralCode,
         method,
-      } = req.body as RegisterUserBody;
-
-      // Validate required fields.
-      if (!email || !name || !method) {
+        howDidYouFindUs,
+      } = req.body as RegisterUserBody;      // Validate required fields.
+      if (!email || !name || !method || !howDidYouFindUs) {
         res
           .status(400)
-          .json({ errorMsg: "Email, Name, and method are required" });
+          .json({ errorMsg: "Email, Name, method, and how you found us are required" });
         return;
       }
 
@@ -79,8 +77,7 @@ export const registerUser = asyncWrapper(
       }
 
       // Use a transaction for atomic operations.
-      const { createdUser, tokens } = await prisma.$transaction(async (tx) => {
-        // Create the new user.
+      const { createdUser, tokens } = await prisma.$transaction(async (tx) => {        // Create the new user.
         const createdUser = await tx.user.create({
           data: {
             email: normalizedEmail,
@@ -92,6 +89,7 @@ export const registerUser = asyncWrapper(
             lastLogin: new Date(),
             plan: "free",
             language: "english",
+            howDidYouFindUs,
           },
         });
 
@@ -126,9 +124,7 @@ export const registerUser = asyncWrapper(
         await axios.post(`${ENV.SERVER_API_URL}/auth/send-verification-email`, {
           email,
         });
-      }
-
-      // Build the client user object.
+      }      // Build the client user object.
       const clientUser = {
         id: createdUser.id,
         name: createdUser.name,
@@ -140,6 +136,7 @@ export const registerUser = asyncWrapper(
         image: createdUser.image,
         plan: createdUser.plan,
         country: createdUser.country,
+        howDidYouFindUs: createdUser.howDidYouFindUs,
         tokens,
       };
 
@@ -164,9 +161,7 @@ export const registerUser = asyncWrapper(
 export const login = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     const { email, password, image, method } = req.body as LoginBody;
-    const normalizedIdentifier = email.toLowerCase();
-
-    // Find user by email
+    const normalizedIdentifier = email.toLowerCase();    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: normalizedIdentifier, method: method, archived: false },
       select: {
@@ -179,7 +174,8 @@ export const login = asyncWrapper(
         image: true,
         createdAt: true,
         plan: true,
-        country: true
+        country: true,
+        howDidYouFindUs: true
       },
     });
 
@@ -210,9 +206,7 @@ export const login = asyncWrapper(
     }
 
     // Generate authentication tokens
-    const tokens = await generateAuthTokens(user);
-
-    const clientUser = {
+    const tokens = await generateAuthTokens(user);    const clientUser = {
       id: user.id,
       name: user.name,
       email: user.email,
@@ -223,6 +217,7 @@ export const login = asyncWrapper(
       image: user.image,
       plan: user.plan,
       country: user.country,
+      howDidYouFindUs: user.howDidYouFindUs,
       tokens,
     };
 

@@ -38,6 +38,7 @@ model User {
   createdAt                  DateTime? @default(now())
   archived                   Boolean   @default(false)
   language                   String    @default("english")
+  howDidYouFindUs            String
 }
 
 
