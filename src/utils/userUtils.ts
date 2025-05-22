@@ -59,8 +59,39 @@ export const getCurrentSubscription = async (subscriptions: SubscriptionInvoice[
     cardLastFour: subscription.cardLastFour ?? "9999",
 
     subscriptionStartAt: new Date(currentSubscription.subscriptionStartAt),
-    subscriptionEndAt: new Date(currentSubscription.subscriptionEndAt),
-
-    billingReason: currentSubscription.billingReason
+    subscriptionEndAt: new Date(currentSubscription.subscriptionEndAt),    billingReason: currentSubscription.billingReason
   } : undefined;
+}
+
+/**
+ * Converts a database user to the format expected by token functions
+ * Ensures type compatibility for token generation functions
+ */
+export function toUserInterface(dbUser: any): {
+  id: string;
+  name: string;
+  email: string;
+  method: string;
+  lastLogin: Date | null;
+  image: string | null;
+  whoAreYou?: string;
+  age?: number;
+  birthDate?: Date;
+  howDidYouFindUs?: string;
+  plan?: string;
+} {
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    method: dbUser.method,
+    lastLogin: dbUser.lastLogin,
+    image: dbUser.image,
+    plan: dbUser.plan || 'free',
+    // Convert null to undefined for whoAreYou to match interface requirements
+    whoAreYou: dbUser.whoAreYou === null ? undefined : dbUser.whoAreYou,
+    age: dbUser.age === null ? undefined : dbUser.age,
+    birthDate: dbUser.birthDate === null ? undefined : dbUser.birthDate,
+    howDidYouFindUs: dbUser.howDidYouFindUs || undefined
+  };
 }

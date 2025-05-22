@@ -16,7 +16,10 @@ export const registerUserSchema = {
     image: z.string().optional(),
     method: z.enum(['normal', 'google']),
     dontRememberMe: z.boolean().default(false),
-    howDidYouFindUs: z.string().min(1, { message: "Please tell us how you found us" }),
+    howDidYouFindUs: z.preprocess(
+      (val) => val === null || val === undefined ? "" : val,
+      z.string().min(1, { message: "Please tell us how you found us" })
+    ),
     whoAreYou: z.enum(USER_TYPES, { 
       errorMap: () => ({ message: "Please select who you are" })
     }).optional(),

@@ -16,6 +16,7 @@ import {
   generateVerifyEmailToken,
   verifyToken,
 } from "@/utils/tokenUtils";
+import { toUserInterface } from "@/utils/userUtils";
 import {
   ForgotPasswordBody,
   LoginBody,
@@ -51,13 +52,14 @@ export const registerUser = asyncWrapper(
         age,
         birthday,
       } = req.body as RegisterUserBody;
-      
-      // Validate required fields.
+        // Validate required fields.
       const missingFields = [];
       if (!email) missingFields.push('email');
       if (!name) missingFields.push('name');
       if (!method) missingFields.push('method');
-      if (!howDidYouFindUs) missingFields.push('howDidYouFindUs');
+      if (!howDidYouFindUs && howDidYouFindUs !== "") missingFields.push('howDidYouFindUs');
+      
+      console.log('howDidYouFindUs value type:', typeof howDidYouFindUs, 'value:', howDidYouFindUs);
       
       if (missingFields.length > 0) {
         console.log('Registration missing fields:', missingFields);
@@ -91,10 +93,9 @@ export const registerUser = asyncWrapper(
           return;
         }
         hashedPassword = await bcrypt.hash(password, 10);
-      }
-
-      // Use a transaction for atomic operations.
-      const { createdUser, tokens } = await prisma.$transaction(async (tx) => {        // Create the new user.
+      }      // Use a transaction for atomic operations.
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the new user.
         const createdUser = await tx.user.create({
           data: {
             email: normalizedEmail,
@@ -106,15 +107,14 @@ export const registerUser = asyncWrapper(
             lastLogin: new Date(),
             plan: "free",
             language: "english",
-            howDidYouFindUs,
+            howDidYouFindUs: howDidYouFindUs === null || howDidYouFindUs === undefined || howDidYouFindUs === "" ? "Not specified" : howDidYouFindUs,
             whoAreYou: whoAreYou || undefined,
             age: age ? Number(age) : null,
             birthDate: birthday ? new Date(birthday) : new Date(),
-          },
-        });
+          },        });
 
         // Generate authentication tokens.
-        const tokens = await generateAuthTokens(createdUser);
+        const tokens = await generateAuthTokens(toUserInterface(createdUser));
 
         if (referralCode) {
           const referrer = await tx.referralCode.findUnique({
@@ -138,6 +138,8 @@ export const registerUser = asyncWrapper(
 
         return { createdUser, tokens };
       });
+      
+      const { createdUser, tokens } = result;
       await sendRegisterEmail({ name, email });
 
       if (method === "normal") {
@@ -153,11 +155,10 @@ export const registerUser = asyncWrapper(
         lastLogin: createdUser?.lastLogin
           ? new Date(createdUser.lastLogin).toISOString()
           : null,
-        image: createdUser.image,
-        plan: createdUser.plan,
+        image: createdUser.image,        plan: createdUser.plan,
         country: createdUser.country,
         howDidYouFindUs: createdUser.howDidYouFindUs,
-        whoAreYou: createdUser.whoAreYou || null,
+        whoAreYou: createdUser.whoAreYou || undefined,
         age: createdUser.age || null,
         birthDate: createdUser.birthDate ? createdUser.birthDate.toISOString() : null,
         tokens,
@@ -231,10 +232,10 @@ export const login = asyncWrapper(
       if (image) {
         await prisma.user.update({ where: { email }, data: { image } });
       }
-    }
-
-    // Generate authentication tokens
-    const tokens = await generateAuthTokens(user);    const clientUser = {
+    }    // Generate authentication tokens
+    const tokens = await generateAuthTokens(toUserInterface(user));
+    
+    const clientUser = {
       id: user.id,
       name: user.name,
       email: user.email,
@@ -244,9 +245,8 @@ export const login = asyncWrapper(
         : null,
       image: user.image,
       plan: user.plan,
-      country: user.country,
-      howDidYouFindUs: user.howDidYouFindUs || null,
-      whoAreYou: user.whoAreYou || null,
+      country: user.country,      howDidYouFindUs: user.howDidYouFindUs || null,
+      whoAreYou: user.whoAreYou,
       age: user.age || null,
       birthDate: user.birthDate?.toISOString() || null,
       tokens,
@@ -316,10 +316,9 @@ export const refreshTokens = asyncWrapper(
       if (!user) {
         res.status(404).json({ error: "User with that email not found" });
         return;
-      }
-      // Assume generateAccessToken returns an object with 'token' (string) and 'expiresAt' (number in seconds)
+      }      // Assume generateAccessToken returns an object with 'token' (string) and 'expiresAt' (number in seconds)
       const { token: newAccessToken, expires } =
-        await generateAccessToken(user);
+        await generateAccessToken(toUserInterface(user));
 
       res.status(200).json({
         success: "Access token regenerated",
@@ -374,11 +373,10 @@ export const forgotPassword = asyncWrapper(
 
       if (!user) {
         res.status(404).json({ error: "User with that email not found" });
-        return;
-      }
+        return;      }
 
       // Generate reset token and send email using the merged user model
-      const resetPasswordToken = await generateResetPasswordToken(user);
+      const resetPasswordToken = await generateResetPasswordToken(toUserInterface(user));
       await sendResetPasswordEmail(user, resetPasswordToken);
 
       res
@@ -462,10 +460,9 @@ export const sendVerificationEmail = asyncWrapper(
 
       if (!user) {
         res.status(404).json({ error: "User with that email not found" });
-        return;
-      }
+        return;      }
 
-      const verifyEmailToken = await generateVerifyEmailToken(user);
+      const verifyEmailToken = await generateVerifyEmailToken(toUserInterface(user));
 
       await sendVerificationEmailUtil(user, verifyEmailToken);
 
