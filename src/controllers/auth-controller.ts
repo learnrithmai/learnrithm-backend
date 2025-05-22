@@ -51,13 +51,13 @@ export const registerUser = asyncWrapper(
         whoAreYou,
         age,
         birthday,
-      } = req.body as RegisterUserBody;
-        // Validate required fields.
+      } = req.body as RegisterUserBody;      // Validate required fields.
       const missingFields = [];
       if (!email) missingFields.push('email');
       if (!name) missingFields.push('name');
       if (!method) missingFields.push('method');
-      if (!howDidYouFindUs && howDidYouFindUs !== "") missingFields.push('howDidYouFindUs');
+      // For howDidYouFindUs, we'll allow it to be processed by the schema validation
+      // which will set a default value if it's empty or null
       
       console.log('howDidYouFindUs value type:', typeof howDidYouFindUs, 'value:', howDidYouFindUs);
       
@@ -103,11 +103,11 @@ export const registerUser = asyncWrapper(
             method,
             password: method === "normal" ? hashedPassword : null,
             name,
-            country: country,
-            lastLogin: new Date(),
+            country: country,            lastLogin: new Date(),
             plan: "free",
             language: "english",
-            howDidYouFindUs: howDidYouFindUs === null || howDidYouFindUs === undefined || howDidYouFindUs === "" ? "Not specified" : howDidYouFindUs,
+            // Schema validation will already handle null/empty values with default
+            howDidYouFindUs: howDidYouFindUs || "Not specified",
             whoAreYou: whoAreYou || undefined,
             age: age ? Number(age) : null,
             birthDate: birthday ? new Date(birthday) : new Date(),

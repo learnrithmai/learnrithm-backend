@@ -13,11 +13,16 @@ export const registerUserSchema = {
     password: z.string().optional(),
     country: CountrySchema.optional(),
     referralCode: z.string().optional(),
-    image: z.string().optional(),
-    method: z.enum(['normal', 'google']),
+    image: z.string().optional(),    method: z.enum(['normal', 'google']),
     dontRememberMe: z.boolean().default(false),
     howDidYouFindUs: z.preprocess(
-      (val) => val === null || val === undefined ? "" : val,
+      (val) => {
+        // Handle null, undefined, or empty string by providing a default value
+        if (val === null || val === undefined || val === "") {
+          return "Not specified";
+        }
+        return val;
+      },
       z.string().min(1, { message: "Please tell us how you found us" })
     ),
     whoAreYou: z.enum(USER_TYPES, { 
