@@ -3,6 +3,7 @@ import { getCookieOptions } from "@/config/security/cookieOptions";
 import { asyncWrapper } from "@/middleware/asyncWrapper";
 import { isPasswordMatch } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
+import { Prisma } from "@prisma/client";
 import {
   sendRegisterEmail,
   sendResetPasswordEmail,
@@ -186,27 +187,29 @@ export const registerUser = asyncWrapper(
 
 export const login = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
-    const { email, password, image, method } = req.body as LoginBody;
-    const normalizedIdentifier = email.toLowerCase();    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedIdentifier, method: method, archived: false },
-      select: {
-        id: true,
-        method: true,
-        password: true,
-        name: true,
-        email: true,
-        lastLogin: true,
-        image: true,
-        createdAt: true,
-        plan: true,
-        country: true,
-        howDidYouFindUs: true,
-        whoAreYou: true,
-        age: true,
-        birthDate: true
-      },
-    });
+    const { email, password, image, method } = req.body as LoginBody;    const normalizedIdentifier = email.toLowerCase();    
+    
+    try {
+      // Find user by email
+      const user = await prisma.user.findUnique({
+        where: { email: normalizedIdentifier, method: method, archived: false },
+        select: {
+          id: true,
+          method: true,
+          password: true,
+          name: true,
+          email: true,
+          lastLogin: true,
+          image: true,
+          createdAt: true,
+          plan: true,
+          country: true,
+          howDidYouFindUs: true,
+          whoAreYou: true,
+          age: true,
+          birthDate: true
+        },
+      });
 
     if (!user) {
       res.status(404).json({ error: "User with that email not found" });
@@ -250,12 +253,40 @@ export const login = asyncWrapper(
       age: user.age || null,
       birthDate: user.birthDate?.toISOString() || null,
       tokens,
-    };
-
-    res.send({
+    };    res.send({
       success: `Login successful: ${user.name}!`,
       user: clientUser,
     });
+    } catch (error) {
+      console.error("Error in login:", error);
+      
+      // Check if this is the specific Prisma error for null howDidYouFindUs
+      if (error instanceof Prisma.PrismaClientKnownRequestError && 
+          error.message.includes('howDidYouFindUs') && 
+          error.message.includes('null')) {
+        
+        // Fix the user record with the null howDidYouFindUs value
+        try {
+          await prisma.user.update({
+            where: { email: normalizedIdentifier },
+            data: { howDidYouFindUs: "Not specified" }
+          });
+          
+          // Try the login again
+          return login(req, res);
+        } catch (updateError) {
+          console.error("Error fixing user record:", updateError);
+          res.status(500).json({
+            error: "An error occurred during login. Please try again later."
+          });
+        }
+      } else {
+        // For other errors, return a generic message
+        res.status(500).json({
+          error: "An error occurred during login. Please try again later."
+        });
+      }
+    }
   }
 );
 
