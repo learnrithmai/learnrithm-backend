@@ -66,6 +66,10 @@ export const getCurrentSubscription = async (subscriptions: SubscriptionInvoice[
 /**
  * Converts a database user to the format expected by token functions
  * Ensures type compatibility for token generation functions
+ * 
+ * Note: The lastLogin field is updated on every successful login
+ * so the database should be queried for the most up-to-date value
+ * when needed for display purposes
  */
 export function toUserInterface(dbUser: any): {
   id: string;

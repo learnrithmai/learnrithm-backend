@@ -4,6 +4,7 @@ import { asyncWrapper } from "@/middleware/asyncWrapper";
 import { isPasswordMatch } from "@/utils/authUtils";
 import log from "@/utils/chalkLogger";
 import { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import {
   sendRegisterEmail,
   sendResetPasswordEmail,
@@ -188,8 +189,7 @@ export const registerUser = asyncWrapper(
 export const login = asyncWrapper(
   async (req: Request, res: Response): Promise<void> => {
     const { email, password, image, method } = req.body as LoginBody;    const normalizedIdentifier = email.toLowerCase();    
-    
-    try {
+      try {
       // Find user by email
       const user = await prisma.user.findUnique({
         where: { email: normalizedIdentifier, method: method, archived: false },
@@ -226,8 +226,7 @@ export const login = asyncWrapper(
       if (!(await isPasswordMatch(password, user.password))) {
         res.status(401).json({ error: "Invalid password" });
         return;
-      }
-    } else if (user?.method === 'google') {
+      }    } else if (user?.method === 'google') {
       if (!email) {
         res.status(404).json({ error: "User with that email not found" });
         return;
@@ -235,17 +234,26 @@ export const login = asyncWrapper(
       if (image) {
         await prisma.user.update({ where: { email }, data: { image } });
       }
-    }    // Generate authentication tokens
-    const tokens = await generateAuthTokens(toUserInterface(user));
+    }
+      // Update the lastLogin timestamp to the current date and time
+    const currentLoginTime = new Date();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: currentLoginTime }
+    });
+    
+    // Generate authentication tokens
+    const tokens = await generateAuthTokens(toUserInterface({
+      ...user,
+      lastLogin: currentLoginTime // Use the updated login time for token generation
+    }));
     
     const clientUser = {
       id: user.id,
       name: user.name,
       email: user.email,
       method: user.method,
-      lastLogin: user?.lastLogin
-        ? new Date(user.lastLogin).toISOString()
-        : null,
+      lastLogin: currentLoginTime.toISOString(), // Use the current login time
       image: user.image,
       plan: user.plan,
       country: user.country,      howDidYouFindUs: user.howDidYouFindUs || null,
@@ -256,8 +264,7 @@ export const login = asyncWrapper(
     };    res.send({
       success: `Login successful: ${user.name}!`,
       user: clientUser,
-    });
-    } catch (error) {
+    });    } catch (error) {
       console.error("Error in login:", error);
       
       // Check if this is the specific Prisma error for null howDidYouFindUs
@@ -269,7 +276,11 @@ export const login = asyncWrapper(
         try {
           await prisma.user.update({
             where: { email: normalizedIdentifier },
-            data: { howDidYouFindUs: "Not specified" }
+            data: { 
+              howDidYouFindUs: "Not specified",
+              // Also update lastLogin while fixing the record
+              lastLogin: new Date()
+            }
           });
           
           // Try the login again
@@ -277,6 +288,54 @@ export const login = asyncWrapper(
         } catch (updateError) {
           console.error("Error fixing user record:", updateError);
           res.status(500).json({
+            error: "An error occurred during login. Please try again later."
+          });
+        }
+      } else if (error instanceof Prisma.PrismaClientKnownRequestError && 
+                error.message.includes('lastLogin')) {
+        // If there's an issue updating lastLogin, log it but still allow login
+        console.error("Error updating lastLogin, but continuing with login process:", error);
+        
+        // Proceed with login without the lastLogin update
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: normalizedIdentifier, method: method, archived: false },
+            select: {
+              id: true, method: true, password: true, name: true, email: true,
+              lastLogin: true, image: true, createdAt: true, plan: true, country: true,
+              howDidYouFindUs: true, whoAreYou: true, age: true, birthDate: true
+            },
+          });
+          
+          if (!user) {
+            return res.status(404).json({ error: "User with that email not found" });
+          }
+          
+          const tokens = await generateAuthTokens(toUserInterface(user));
+          
+          const clientUser = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            method: user.method,
+            lastLogin: user?.lastLogin ? new Date(user.lastLogin).toISOString() : null,
+            image: user.image,
+            plan: user.plan,
+            country: user.country,
+            howDidYouFindUs: user.howDidYouFindUs || null,
+            whoAreYou: user.whoAreYou,
+            age: user.age || null,
+            birthDate: user.birthDate?.toISOString() || null,
+            tokens,
+          };
+          
+          return res.send({
+            success: `Login successful: ${user.name}!`,
+            user: clientUser,
+          });
+        } catch (secondError) {
+          console.error("Error in fallback login process:", secondError);
+          return res.status(500).json({
             error: "An error occurred during login. Please try again later."
           });
         }
